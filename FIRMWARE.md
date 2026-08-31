@@ -28,8 +28,8 @@ official updates are rev 6; a new-in-box unit ships at rev 1, and one
 accepted OTA ends its porting usefulness forever.
 
 - **Read your unit's rev in Download Mode first** (`RP SWREV` line –
-  authoritative; the boot-splash "OEM LOCK" line is usually right but has
-  shown stale state in edge cases).
+  authoritative; the boot-splash "OEM LOCK" line is right on a healthy boot
+  chain but a broken one can make it show the wrong state).
 - **Use the last firmware of YOUR unit's series** as the port's donor
   package. A rev 1 unit targets 1-series firmware; a rev 5 unit targets
   5-series. Never flash above your current rev unless you deliberately
@@ -156,10 +156,11 @@ downloaded.
 
 - **Rev 5 is the last unlockable revision; rev 6 is terminal.** One UI 8
   removed bootloader unlocking globally. Treat Download Mode as the
-  authoritative readout: the boot-splash "OEM LOCK" line is normally
-  correct, but it has shown wrong/stale state in edge cases (observed
-  while debugging a mis-built image) – don't make irreversible decisions
-  from the splash screen.
+  authoritative readout: the boot-splash "OEM LOCK" line is correct on a
+  healthy boot chain, but a broken boot chain can make it show the wrong
+  state (observed: an unlocked unit running a mis-built custom ROM
+  displayed as locked) – don't make irreversible decisions from the
+  splash screen.
 - **Never accept an OTA on a project unit.** Current official builds are
   rev 6 – past the cliff. This matters doubly for the rev 1 S9+: one
   accepted update permanently ends its usefulness.

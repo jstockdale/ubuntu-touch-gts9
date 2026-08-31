@@ -73,9 +73,10 @@ unlocked – [FLASHING.md](FLASHING.md)).
 ### Bootloader / firmware
 
 8. Read bootloader state (lock and rev) from **Download Mode** (`RP
-   SWREV` line). The boot-splash "OEM LOCK" line is normally correct but
-   has shown stale state in edge cases (seen while debugging a mis-built
-   image) – never trust it for irreversible decisions. Full fuse rules:
+   SWREV` line). The boot-splash "OEM LOCK" line is correct on a healthy
+   boot chain, but a broken boot chain can make it show the wrong state
+   (an unlocked unit with a mis-built custom ROM displayed as locked) –
+   never trust it for irreversible decisions. Full fuse rules:
    [FIRMWARE.md](FIRMWARE.md).
 9. **If your unit is still rev 1, it is precious – keep it offline and
    never let it accept an OTA.** Official updates are rev 6; one accepted

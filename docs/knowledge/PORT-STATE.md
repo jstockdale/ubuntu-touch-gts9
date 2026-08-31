@@ -385,8 +385,9 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
   A13/rev 1). Kernel generation 5.15.153 / KMI 30958166 across all. `[porting-orig.p1,p2][tabS9plus]`
 - **Sourcing rules:** WiFi SKUs only (X710/X810/X910); verify bit fuse in Download Mode before setup;
   keep off WiFi through setup; disable auto-update; avoid refurbs and X816/X916U carrier variants;
-  boot-splash "OEM LOCK" line is normally correct but showed stale state in edge
-  cases (mis-built debug image) – Download Mode is authoritative. `[install-boot §1,2]`
+  boot-splash "OEM LOCK" line is correct on a healthy boot chain, but a broken boot
+  chain can make it show the wrong state (an unlocked unit with a mis-built custom
+  ROM displayed as locked) – Download Mode is authoritative. `[install-boot §1,2]`
 - **Odin:** BL+AP+full CSC (not HOME_CSC) for cross-major downgrade; routes images by filename inside
   the tar. No fastboot in Samsung bootloader (Odin/Heimdall only); fastbootd works from TWRP. `[install-boot §1,2]`
 
