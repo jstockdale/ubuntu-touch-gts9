@@ -52,11 +52,16 @@ TWRP: full backup incl. EFS first → Install the built zip from /data →
 flash: boot **unplugged** (ABL stamps charger-mode on cabled boots; the
 container wrapper filters it, but belt-and-braces on the very first boot).
 
-## Known build-system split (pending merge)
+## Build-system state (2026-08-30 parity remediation)
 
-This skeleton's `scripts/swap-vendor-modules.sh` carries the **modules.load
-dedupe** (audio bug #1 fix). `common/scripts/swap-vendor-modules.sh` (v2)
-carries the **LEFTOVER/UNLANDED audit + allowlist strict mode** but not the
-dedupe. They forked in parallel and were never merged — merge before the next
-Ultra build, or run the skeleton copy and audit by hand. Same story for
-`super.sh`/`make-flashable.sh` (common/ has the strict-mode v2s).
+The former swap-script split is RESOLVED: `scripts/swap-vendor-modules.sh`
+is the merged v3 (modules.load dedupe + LEFTOVER/UNLANDED audit; identical
+content in `common/scripts/`). The audit runs report-only until you triage
+the LEFTOVER list of a build into `scripts/swap-allowlist.txt` (template
+beside it). `super.sh` v3 sets the LP group ceiling at super capacity and
+the root ships at 7600M (deviceinfo) — **rebuilding no longer regresses the
+on-device root resize**. `make-flashable.sh` is the strict v2.
+`flashable/.../update-binary` carries the v5 sed-safe device check (verified
+by fork simulation) on top of the v4 flash-safety mechanics; the device-check
+rewrite has not yet been exercised on a physical flash — eyeball its output
+on the next TWRP install.

@@ -18,13 +18,21 @@ and never accepts an OTA.** One accepted update is a one-way door.
   (all hardening retained) with the gts9p constants: bare
   `GTS9P_ANA38407_AMSA24VU05:` panel cmdline, STM touch
   (`stm_ts_fts1b90a.ko` build-**fatal** if missing — Samsung's truncated
-  spelling is intentional), `SUPER=11714691072` (28 MiB smaller than the
-  Ultra — do not inherit the skeleton default).
+  spelling is intentional; `wez01.ko` pen is now fatal too),
+  `SUPER=11714691072` (28 MiB smaller than the Ultra — do not inherit the
+  skeleton default). 2026-08-30 parity pass added gates for the wacom
+  kernel wiring, WiFi persistence, touchpad rotation, the superseded PA
+  drop-in, and a case-insensitive Ultra-token check over the forked
+  flasher.
 - `x810-extract.sh` — streams the parts out of the
   `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` factory image; hard-fails
   unless raw super is byte-exactly 11,714,691,072.
 - `imports/` — gts9p OSRC import bundle (GTS9P panel + AWH8 delta, DTS
   r00/r02/r04, merged display Kbuild). Provenance in its `MANIFEST.md`.
+  2026-08-30: merged `drivers/input/{Kconfig,Makefile}` added (wacom-only
+  wiring, copied from the proven gts9u bundle, zero goodix references) —
+  without it `CONFIG_EPEN_WACOM_WEZ01=m` sits inert and no pen module is
+  ever built.
 - `reference/GTS9PWIFI_EUR_OPEN.pit` — parsed PIT (partition sizes).
 - `reference/dts/` — canonical A13/AWG1 dts + the MIRROR identity reference
   (~13% drift — build only from the A13 canonical).
@@ -32,9 +40,11 @@ and never accepts an OTA.** One accepted update is a one-way door.
 
 ## What is still needed
 
-1. Fork the skeleton: `samsung-gts9u → samsung-gts9p` (sed + file renames —
-   exact checklist in runbook Phase 1; the gts9u skeleton lives at
-   `../gts9uwifi/skeleton/`).
+1. Fork the skeleton: `samsung-gts9u → samsung-gts9p` — fork FROM
+   `../gts9uwifi/skeleton/` at current HEAD (never from a
+   `gts9uwifi-skeleton*.tar.gz`; the pre-audio original survives under that
+   name in the archive). Exact recipe incl. the uppercase/identity pass in
+   runbook Phase 1.
 2. The Samsung inputs, kept out of git (`archive/osrc/` holds the two smaller
    OSRC zips; the **base** `SM-X818U_13_Opensource.zip` and the 9.2 GB AWHA
    factory zip must be re-downloaded — sources and sizes in the runbook).

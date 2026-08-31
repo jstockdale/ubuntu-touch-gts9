@@ -16,7 +16,7 @@ inside the imports bundle (per-file provenance).
 | `build-gts9pwifi.sh`, `x810-extract.sh` | this session | `bash -n` passes; `chmod +x` both |
 | `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` | your s10.ooo link | exactly 9,225,074,787 bytes; `unzip -T` OK. Token links expire – if it 403s, regenerate from the samfw SM-X810 / XAR / AWHA page |
 | OSRC set: `SM-X818U_13_Opensource.zip` (base) + `SM-X810_13_Opensource_dts.zip` + AWHA-named delta zip | already downloaded | keep all three together |
-| `gts9uwifi-skeleton.tar.gz` | your Ultra work | – |
+| gts9u skeleton: `devices/gts9uwifi/skeleton/` **from this repo, current HEAD** | ubuntu-touch-gts9.git | do NOT use any `gts9uwifi-skeleton*.tar.gz` — the pre-audio original survives under exactly that name (`archive/superseded/gts9uwifi-skeleton-orig.tar.gz`) and is a foot-gun; the repo dir is the canonical audio-era skeleton **plus the 2026-08-30 parity fixes** (WiFi persistence, tp-rotate, sed-safe flasher, merged swap script, LP budget) |
 | TWRP gts9p build + your vbmeta-disabled file | same XDA thread as the Ultra | treat as unverified until Phase 3.5 |
 
 ### 0.2 Archive the rescue path
@@ -44,8 +44,7 @@ a missed package surfaces immediately, not mid-run.
 ## Phase 1 – fork the skeleton (samsung-gts9p)
 
 ```
-tar xzf gts9uwifi-skeleton.tar.gz          # -> samsung-gts9u/
-cp -r samsung-gts9u samsung-gts9p
+cp -r /path/to/ubuntu-touch-gts9/devices/gts9uwifi/skeleton samsung-gts9p
 cd samsung-gts9p
 ```
 
@@ -53,10 +52,38 @@ cd samsung-gts9p
 
 ```
 grep -rl gts9u . | xargs sed -i 's/gts9u/gts9p/g'
-grep -rl x910 .  | xargs sed -i 's/x910/x810/g'     # firmware tar name in build.sh
+grep -rl x910 .  | xargs sed -i 's/x910/x810/g'     # incl. the flasher's MODEL_WIFI token
 ```
 
-Note `gts9uwifi` becomes `gts9pwifi` via the first sed automatically.
+Note `gts9uwifi` becomes `gts9pwifi` via the first sed automatically, and the
+update-binary device check converts COMPLETELY via these two seds (v5 keeps
+all its model/codename tokens in lowercase variables for exactly this reason;
+the 5G sibling x816 is derived, not spelled out).
+
+### 1.1b Uppercase/identity pass (the lowercase seds cannot see these)
+
+```
+# USB identity strings (gadget + usb-moded)
+sed -i 's/SM-X910/SM-X810/g' overlay/system/usr/libexec/gts9-adb-gadget \
+    overlay/system/etc/default/usb-moded.d/device-specific-config.conf
+# super.sh manual-run default (the wrapper's export wins in the scripted
+# path, but a manual scripts/super.sh run must not get X910 geometry)
+sed -i 's/11744051200/11714691072/' scripts/super.sh
+# optional tidiness: the touchpad env-var names (pair renames consistently)
+sed -i 's/GTS9U_TP_/GTS9P_TP_/g' \
+    overlay/system/usr/local/bin/gts9p-tp-orient \
+    overlay/system/etc/default/gts9p-tp-rotate \
+    overlay/system/etc/systemd/system/gts9p-tp-rotate.service
+```
+
+Also fix identity by hand (no sed can guess these):
+- `deviceinfo`: `deviceinfo_name="Tab S9+ 12.4'"`
+- `overlay/system/etc/deviceinfo/devices/gts9pwifi.yaml`: `PrettyName: Tab S9+`
+- Replace `GTS9UWIFI_EUR_OPEN.pit` with `GTS9PWIFI_EUR_OPEN.pit` (from
+  `devices/gts9pwifi/reference/`); delete the X910 one.
+- `PORT-README.md` describes the X910 — rewrite or delete it.
+- `kernel-additions/halium.config.append` carries Ultra-only goodix notes;
+  harmless (the gts9p wrapper never appends it) but mark or delete.
 
 ### 1.2 File and symlink renames (sed does not rename files)
 
@@ -69,29 +96,37 @@ for l in *gts9u*; do t=$(readlink "$l"); rm "$l"; ln -s "${t//gts9u/gts9p}" "${l
 cd -
 ```
 
-### 1.3 Verify the fork
+### 1.3 Verify the fork (case-insensitive — uppercase leftovers bite)
 
 ```
-grep -rn gts9u . && echo "LEFTOVERS - fix before building" || echo "clean"
+grep -rniE 'gts9u|x910' . | grep -vE 'PORT-README|swap-vendor-modules.sh|super.sh:.*#|deviceinfo:.*#' \
+  && echo "LEFTOVERS - triage each before building" || echo "clean"
 ls -la overlay/system/usr/local/sbin/gts9p-audio-bringup \
        overlay/system/etc/udev/rules.d/61-gts9p-pen.rules
+sh -n flashable/META-INF/com/google/android/update-binary
 ```
 
-`build-gts9pwifi.sh`'s sanity block re-checks every audio/pen overlay file at
-build time, so a missed rename dies loudly there rather than on-device.
+Benign residue (comments/provenance only): historical notes in
+`swap-vendor-modules.sh`/`super.sh`/`deviceinfo` comments. Anything else —
+especially in `flashable/`, `overlay/`, or executable scripts — must be fixed.
+`build-gts9pwifi.sh`'s sanity block re-checks every audio/pen/wifi/touchpad
+overlay file AND greps the flasher for Ultra tokens at build time, so a missed
+rename dies loudly there rather than on-device.
 
-### 1.4 Optional polish – display scaling
+### 1.4 Display scaling — a knob must be ADDED, not found
 
-The S9+ is ~266 ppi vs the Ultra's ~239. Locate the scaling knob in the
-skeleton (`grep -ri 'GRID_UNIT\|scale' overlay/ deviceinfo* 2>/dev/null`) and
-bump ~11%. Non-blocking: wrong scaling renders, just slightly off-size. Tune
-after first boot if you prefer.
+There is no GRID_UNIT/scale knob anywhere in the skeleton (verified: the grep
+comes back empty — the Ultra runs default scaling). The S9+ is ~266 ppi vs the
+Ultra's ~239 (~11% difference). To pre-compensate, ADD a `GridUnit` entry to
+`overlay/system/etc/deviceinfo/devices/gts9pwifi.yaml` (deviceinfo yaml is the
+UT mechanism for it; the Ultra yaml simply omits it). Non-blocking: wrong
+scaling renders, just slightly off-size — tuning after first boot is fine.
 
-### 1.5 SUPER default (informational)
+### 1.5 SUPER default
 
-The skeleton's `super.sh` still defaults to the X910's 11,744,051,200.
-`build-gts9pwifi.sh` exports `SUPER=11714691072` before calling it, which
-wins – you may also sed the default for hygiene, but it is not required.
+Covered by 1.1b's sed (X810 PIT: 11,714,691,072). `build-gts9pwifi.sh` also
+exports `SUPER=11714691072` before super.sh — belt and braces — and super.sh
+v3 fail-fasts with a named error if the images cannot fit the geometry.
 
 ---
 
@@ -257,8 +292,13 @@ Then climb, one rung at a time, confirming each before the next:
 5. **Pen** – `evtest` on the wez01 device; fw `wez01_gts9p.bin` from vendor.
    *If dead*: wacom_i2c.c drift (148 lines) is suspect #1.
 6. **Extras** – folio keyboard/touchpad (same stm32 pogo family,
-   `stm32_gts9family.bin`; your touchpad rotation quirk carries over),
-   rotation, brightness, battery reporting.
+   `stm32_gts9family.bin`). The rotation daemon IS baked into the forked
+   skeleton (gts9p-tp-rotate, enabled, default 270 — the Ultra-proven
+   landscape label; the pad name `sec_touchpad_pogo` is family-generic).
+   Validate the orientation empirically on this panel: if the cursor is
+   wrong in landscape, run the `gts9p-tp-orient 90` / `270` ladder from the
+   daemon README and set the winning label in `/etc/default/gts9p-tp-rotate`.
+   Then rotation, brightness, battery reporting.
 
 Log each rung's dmesg to the port notes – the diffs against the Ultra's
 bring-up log are the interesting artifacts for upstreaming.
