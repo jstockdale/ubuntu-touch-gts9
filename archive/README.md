@@ -12,8 +12,9 @@ in the live tree.
   refer to that private capture.
 - `notes/` — the retained engineering analyses: RECON (build-script
   lineage, skeleton diffs, fixes catalog), the two synthesis documents
-  (`SYNTHESIS-port-state.md` is the source of
-  `docs/knowledge/PORT-STATE.md`), and `parity/` (the 2026-08-30
+  (`SYNTHESIS-port-state.md` is the original source of
+  `docs/knowledge/PORT-STATE.md`, which has since been corrected and
+  extended — the live copy wins), and `parity/` (the 2026-08-30
   three-device parity audit).
 - `session8-audio/` — the session-8 audio bisection one-off scripts. Their
   conclusions shipped; the scripts are methodology/evidence.

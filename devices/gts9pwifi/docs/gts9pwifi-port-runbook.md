@@ -13,17 +13,17 @@ inside the imports bundle (per-file provenance).
 | Item | Source | Verify |
 |---|---|---|
 | gts9p imports: `devices/gts9pwifi/imports/` **from this repo, current HEAD** | ubuntu-touch-gts9.git | do NOT use any archived `gts9p-imports.tar.gz` (sha256 bce7f412... predates the 2026-08-30 wacom `drivers/input/{Kconfig,Makefile}` wiring addition — a tarball with that hash makes the build's wacom gates die FATAL) |
-| `build-gts9pwifi.sh`, `x810-extract.sh` | this session | `bash -n` passes; `chmod +x` both |
-| `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` (exact vintage — see repo FIRMWARE.md) | your s10.ooo link | exactly 9,225,074,787 bytes; `unzip -T` OK. Token links expire – if it 403s, regenerate from the samfw SM-X810 / XAR / AWHA page |
-| OSRC set: `SM-X818U_13_Opensource.zip` (base) + `SM-X810_13_Opensource_dts.zip` + AWHA-named delta zip | already downloaded | keep all three together |
+| `build-gts9pwifi.sh`, `x810-extract.sh` | this repo (`devices/gts9pwifi/`) | `bash -n` passes; `chmod +x` both |
+| `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` (exact vintage — see repo FIRMWARE.md) | samfw.com → SM-X810 → XAR → AWHA (or any mirror carrying the identical package) | exactly 9,225,074,787 bytes; sha256 in FIRMWARE.md; `unzip -T` OK |
+| OSRC set: `SM-X818U_13_Opensource.zip` (base) + `SM-X810_13_Opensource_dts.zip` + the AWH8-named delta zip (`SM-X818U_13_Opensource_X818USQU1AWH8_…`) | opensource.samsung.com | keep all three together |
 | gts9u skeleton: `devices/gts9uwifi/skeleton/` **from this repo, current HEAD** | ubuntu-touch-gts9.git | do NOT use any `gts9uwifi-skeleton*.tar.gz` — the pre-audio original survives under exactly that name (`archive/superseded/gts9uwifi-skeleton-orig.tar.gz`) and is a foot-gun; the repo dir is the canonical audio-era skeleton **plus the 2026-08-30 parity fixes** (WiFi persistence, tp-rotate, sed-safe flasher, merged swap script, LP budget) |
-| TWRP gts9p build + your vbmeta-disabled file | same XDA thread as the Ultra | treat as unverified until Phase 3.5 |
+| TWRP gts9p build + a verification-disabled vbmeta image | the XDA gts9-family TWRP thread (search: "Tab S9 TWRP gts9") | treat as unverified until Phase 3.5 |
 
 ### 0.2 Archive the rescue path
 
-Old builds rot off mirrors and rev-1 is this unit's permanent way back to
+Old builds rot off mirrors and rev 1 is this unit's permanent way back to
 factory state. Before anything else, copy the AWHA firmware zip and the three
-OSRC zips to durable storage (NAS + offsite, your call).
+OSRC zips to durable storage (ideally two locations).
 
 ### 0.3 Host dependencies (build box)
 
@@ -145,7 +145,7 @@ v3 fail-fasts with a named error if the images cannot fit the geometry.
 ## Phase 2 – firmware extraction (build box)
 
 ```
-curl -C - -o SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip '<s10.ooo link>'
+curl -C - -o SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip '<your download URL>'
 stat -c%s SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip   # must be 9225074787
 FW=$PWD/SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip ./x810-extract.sh
 ```
@@ -160,7 +160,7 @@ geometry. Output: `out-x810/parts/{vendor,odm,product,system_ext,system_dlkm,ven
 ## Phase 3 – unit prep (the tablet)
 
 Standing rule for this entire phase: **no OTA, ever**. Current fleet builds
-are binary 6 – past the last unlockable rev 5. One accepted update ends this
+are rev 6 – past the last unlockable rev 5. One accepted update ends this
 unit's usefulness for the project permanently.
 
 ### 3.1 First boot, offline
@@ -181,8 +181,8 @@ disconnect. Decline anything that offers to update.
 
 Power off. Hold Vol Up + Vol Down and insert the USB cable from the PC.
 On the download screen, photograph and record: the **fuse/bit line**, the
-current **binary (expect 1)**, and the **KG state**. Proceed only if the
-readout matches a pre-fuse-bit-6, binary-1 unit. Vol Down to reboot out.
+current **rev (expect 1)**, and the **KG state**. Proceed only if the
+readout shows rev 1 (an unlockable, pre-cliff unit). Vol Down to reboot out.
 
 ### 3.4 Stock ground-truth capture (while still stock, still locked)
 
@@ -205,7 +205,7 @@ display not attach in Phase 6.
 
 Download mode > long-press Vol Up > confirm. The device wipes. Redo 3.1/3.2
 offline, verify OEM unlocking now shows greyed-on, and check KG state on the
-download screen again per your Ultra procedure (a brief network check-in
+download screen again (same procedure as any Samsung unlock; a brief network check-in
 clears prenormal if needed – same no-OTA discipline).
 
 ### 3.6 TWRP + pristine backup (order matters)
@@ -283,7 +283,7 @@ adb shell twrp reboot system
 
 ## Phase 6 – bring-up ladder
 
-First contact is your usual halium initrd flow: USB rndis comes up, ssh in.
+First contact is the standard halium initrd flow: USB rndis comes up, ssh in.
 Then climb, one rung at a time, confirming each before the next:
 
 1. **Display** – panel should attach via DDIC self-ID.
@@ -322,7 +322,7 @@ bring-up log are the interesting artifacts for upstreaming.
 
 - **Soft**: TWRP restore of the pristine backup from 3.6.
 - **Full factory**: Odin the archived AWHA package (BL/AP/CSC) – possible
-  forever *because* the unit stays on binary 1. Re-flash TWRP after if
+  forever *because* the unit stays on rev 1. Re-flash TWRP after if
   continuing.
-- **Never**: accept an OTA. Binary 6 is in the wild; it is a one-way door out
+- **Never**: accept an OTA. Rev 6 is in the wild; it is a one-way door out
   of unlockability.

@@ -9,7 +9,7 @@ nowhere). Both are baked into the gts9uwifi skeleton overlay as of
   dies on every reflash/OTA, reapply). Pins desktop-GL `libqt5gui5`/
   `libqt5quick5` to -1 so an `apt install krita`-class command can no longer
   remove the -gles Qt stack and crash-loop Lomiri (the 2026-08-27/30 11"
-  incident). Desktop apps go in Libertine/Waydroid.
+  incident — PORT-STATE.md §4). Desktop apps go in Libertine/Waydroid.
 - **`60-limitnofile-greeter.conf`** → for the 11":
   `/home/phablet/.config/systemd/user/lomiri-full-greeter.service.d/`
   (userdata — survives reflash, dies on a userdata wipe). Raises the

@@ -32,7 +32,7 @@ e.g. `[porting-orig.p3]` = `porting-orig_993a1f88.p3.notes.md`, `[ultra-main.p1]
 | Fingerprint | EGIS `etspi,el7xx` (EL721) UDFPS | same | same |
 | Folio kbd/touchpad | stm32 pogo (EF-DX7xx) | stm32 pogo (EF-DX8xx) | stm32 pogo (EF-DX920/DX925) `sec_touchpad_pogo` |
 | SUPER size (PIT) | 11,643,387,904 (Azkali's) | **11,714,691,072** (28 MiB < Ultra) | **11,744,051,200** (+96 MiB > 11") |
-| Firmware on unit | Azkali dev build on A13 vendor; port pins **X710XXU5CYD9** | sealed at **bootloader rev 1**, target **X810XXU1AWHA** (last A13/rev-1) | bought used at **rev 5**, vendor **X910XXS5CYG1** (A15) |
+| Firmware on unit | Azkali dev build (port-composed A13 fingerprint over the A15-era CYD9 vendor — §5); pins **X710XXU5CYD9** | sealed at **bootloader rev 1**, target **X810XXU1AWHA** (last A13/rev 1) | bought used at **rev 5**, vendor **X910XXS5CYG1** (A15) |
 
 Key family fact: all three are SM8550/kalama, so **one halium kernel binary serves the
 family** (Azkali's `kernel-samsung-gts9wifi`, branch `android13-5.15-halium`). Only DTB,
@@ -101,7 +101,7 @@ achieved 2026-08-04 `[porting-orig.p2]`; first fully working boot (charger-mode 
 
 ### gts9wifi / SM-X710 (Tab S9 11") — Azkali's reference port, daily-driven
 
-Runs Azkali's UT 24.04-2.x noble dev build on A13 vendor firmware. This is the upstream port
+Runs Azkali's UT 24.04-2.x noble dev build (port-composed A13 fingerprint; A15-era CYD9 vendor — §5). This is the upstream port
 the Ultra was forked from; the user runs it and files fixes back to Azkali.
 
 **WORKS:** display, GPU, WiFi, BT, touch, folio keyboard, battery, **audio** (only hit bug #4 of
@@ -133,17 +133,18 @@ needed, `sec_e-pen` at event10 full pressure/tilt). `[audio-cluster][ultra-main.
 
 ### gts9pwifi / SM-X810 (Tab S9+) — port kit complete, unexecuted
 
-Newest sealed factory-unlocked unit, kept at **bootloader binary rev 1** (offline; fleet is at
+Sealed factory-unlocked unit, kept at **bootloader rev 1** (offline; fleet firmware is at
 rev 6 which is past the unlockability cliff). Full port kit produced but no build/flash run yet.
 `[tabS9plus]`
 
-**Status:** Ready-to-execute. `gts9p-imports.tar.gz`, `build-gts9pwifi.sh`, `x810-extract.sh`,
+**Status:** Ready-to-execute. `devices/gts9pwifi/imports/` (use the repo tree at HEAD — the
+archived tarball predates the 2026-08-30 wacom wiring), `build-gts9pwifi.sh`, `x810-extract.sh`,
 `GTS9PWIFI_EUR_OPEN.pit`, findings doc, and a six-phase runbook all exist. Skeleton fork
 `samsung-gts9u → samsung-gts9p` not yet done. First-boot unknown = display attach with the bare
 `GTS9P_ANA38407_AMSA24VU05:` panel cmdline.
 
 **Key deltas from Ultra:** touch is STM FTS1BA90A (already in Azkali's tree, no import) not
-Goodix; smaller SUPER (11,714,691,072); firmware X810XXU1AWHA (last A13/rev-1); the goodix,gt9916
+Goodix; smaller SUPER (11,714,691,072); firmware X810XXU1AWHA (last A13/rev 1); the goodix,gt9916
 dts node is inert kalama-MTP cruft (do not chase). Open variance driver: whether the Ultra's audio
 chain reproduces identically. `[tabS9plus][RECON-build-scripts]`
 
@@ -241,7 +242,7 @@ Each bug masked the next. In order:
    **O_RDWR** from Android's uid space; host `chgrp audio` (gid 29) is meaningless there →
    `chmod 0666` on `card_state` and `/sys/kernel/aud_dev/state`.
 
-**Bring-up order (the boot service, `gts9u-audio-bringup` v3/v4):** walk modules.load deduped →
+**Bring-up order (the boot service, `gts9u-audio-bringup` v4):** walk modules.load deduped →
 wait `card_state==1` (≤90 s, FATAL) → chmod 0666 both nodes → clear latch → `ctl.restart
 vendor.audio-hal` + wait running → wait for virtual jack → `touch /run/gts9u-audio-ready`. The
 PulseAudio drop-in `zz-gts9u-audio.conf` **hard-gates on the flag** (no `-` prefix; a non-gated
@@ -292,7 +293,7 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 - **Persistent journald** — tmpfiles.d creates `/var/log/journal` so early-boot logs survive OOM. `[porting-orig.p3]`
 
 ### Audio
-- **Five-bug bringup service** — `gts9u-audio-bringup` v3/v4 + oneshot unit; `zz-gts9u-audio.conf`
+- **Five-bug bringup service** — `gts9u-audio-bringup` v4 + oneshot unit; `zz-gts9u-audio.conf`
   PA gate; `gts9u-virtual-h2w.service`/`.py` uinput jack; modules.load dedupe in
   swap-vendor-modules.sh (restore SELinux xattr). See §3. `[audio-config.p2,p3]`
 - **11" virtual-h2w workaround** — `gts9-virtual-h2w.py` + `.service` + `55-gts9wifi-wait-h2w.conf`
@@ -338,9 +339,9 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 - **Hotspot TTL** — `net.ipv4.ip_default_ttl=65` laptop-side (Halium kernel may lack xt_TTL). `[infra §5]`
 
 ### Build pipeline (findings F1–F9)
-- F1: update-binary v4 — zstd `-t` integrity pre-pass + marker-file pipeline-failure detection
+- F1: update-binary v4 [since superseded by v5 — §7] — zstd `-t` integrity pre-pass + marker-file pipeline-failure detection
   (old `unzip|dd` masked a partial-super soft-brick as success).
-- F2: swap-vendor-modules v2 — LEFTOVER/UNLANDED audit + allowlist strict mode (the class that cost
+- F2: swap-vendor-modules v2 [since merged into v3 — §7] — LEFTOVER/UNLANDED audit + allowlist strict mode (the class that cost
   the va_macro hunt) + modules.load dedupe.
 - F3/F4/F7/F9: build wrapper — preflight (zip/file/pahole/perl), atomic firmware tarball, host-arch
   lpmake detection, PARTS→SRC_PARTS rename.
@@ -349,7 +350,8 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
   executed — the three files were still in the skeleton. Executed in
   parity Tier 1.]
 - F6: super.sh strict mode.
-- F8: goodix_ts_berlin missing = build-fatal; wez01 missing = warning.
+- F8: goodix_ts_berlin missing = build-fatal; wez01 missing = warning
+  [wez01 warn→FATAL on both devices 2026-08-30 — §7].
 - Plus audio-overlay sanity gate (V3). `[ultra-main.p1,p2][RECON-build-scripts]`
 
 ---
@@ -378,7 +380,7 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
   CYD9 firmware release itself is the April-2025/A15-era quarterly, one XXS
   security respin behind our archived CYG1 packages); gts9uwifi
   vendor **X910XXS5CYG1** (A15, rev 5, patch 2025-07-01); gts9pwifi target **X810XXU1AWHA** (last
-  A13/rev-1). Kernel generation 5.15.153 / KMI 30958166 across all. `[porting-orig.p1,p2][tabS9plus]`
+  A13/rev 1). Kernel generation 5.15.153 / KMI 30958166 across all. `[porting-orig.p1,p2][tabS9plus]`
 - **Sourcing rules:** WiFi SKUs only (X710/X810/X910); verify bit fuse in Download Mode before setup;
   keep off WiFi through setup; disable auto-update; avoid refurbs and X816/X916U carrier variants;
   splash-screen "OEM LOCK" line misreports — Download Mode is authoritative. `[install-boot §1,2]`
@@ -474,6 +476,10 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 **Persistence discipline (recurring):** every image flash wipes the rootfs and every userdata wipe
 removes /home; fixes that survive live on /data or in the skeleton overlay. Post-flash:
 run `fixes/post-flash/<device>-post-flash.sh` (and keep the kit off-device). `[install-boot §2][lomiri-crash.p2]`
+
+**Fleet update 2026-08-31:** new-in-box **rev 1** test units acquired for all
+three models (S9+, X710, X910) — the rev 1 / AWHA path moves from assembled to
+testable; hash-pin the AWHA packages in FIRMWARE.md when downloaded.
 
 **New ledger items (2026-08-30 parity audit):**
 19. ~~Merge the two swap-vendor-modules.sh generations (dedupe + audit).~~ **DONE**

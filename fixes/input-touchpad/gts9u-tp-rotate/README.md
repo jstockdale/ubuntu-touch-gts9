@@ -1,4 +1,4 @@
-# gts9u-tp-rotate v0
+# gts9u-tp-rotate v0.1
 
 Folio touchpad orientation shim for Ubuntu Touch on the Galaxy Tab S9 Ultra
 (gts9uwifi). Works unmodified on any device whose folio pad enumerates as

@@ -31,3 +31,11 @@ Device-agnostic utilities from the porting campaign.
 
 - `audio-diag-nb1.sh` — read-only audio triage ladder (H1/H2/H3 hypotheses:
   card state, PA state, extevdev presence) for the 11" no-sound cases.
+
+## dev/
+
+- `verify-flasher-fork.sh` — behavioral test harness for the update-binary
+  device check, exercising the REAL script text of both the Ultra original
+  and the runbook-forked gts9p variant against a full accept/reject matrix
+  (21 scenarios). Run after touching the flasher or the fork recipe; the
+  build gates assume its invariants hold.

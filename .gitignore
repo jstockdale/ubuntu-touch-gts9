@@ -25,3 +25,6 @@ ubuntu-touch-gts9*wifi-*.zip
 archive/transcripts/
 archive/logs/
 archive/notes/*.notes.md
+
+# Python bytecode
+__pycache__/

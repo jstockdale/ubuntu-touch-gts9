@@ -27,7 +27,7 @@ The A13 release is **base + overlays**, not standalone drops:
 2. `SM-X810_13_Opensource_dts.zip` (have) – gts9pwifi overlay: dts r00/r02/r04 +
    Makefile, gts9pwifi `lego.config`, `kalama-gki_defconfig`, sm5714/sm5440
    battery dtsi, generated headers.
-3. AWHA-named zip (have) – AWH8 delta: **updated `GTS9P_ANA38407_AMSA24VU05_panel.{c,h}`**,
+3. AWH8-named zip (`SM-X818U_13_Opensource_X818USQU1AWH8_…`, have) – AWH8 delta: **updated `GTS9P_ANA38407_AMSA24VU05_panel.{c,h}`**,
    SELF_DISPLAY, sm5714 typec, sec_battery; also gts9p (5G) dts – not our target.
 
 Assembly order for imports: base → dts overlay → AWH8 delta.
@@ -66,7 +66,7 @@ PIT (unit = 4096 B/block, calibrated against extracted boot.img):
    TWRP gts9p boot test + FULL backup incl. EFS before any flash.
 4. Then: assemble `gts9p-imports`, write `x810-extract.sh` +
    `build-gts9pwifi.sh` (SUPER=11714691072, panel sed, fts1ba90a fatal check,
-   wez01 warn check unchanged).
+   wez01 warn check unchanged). [SUPERSEDED 2026-08-30: wez01 is now FATAL — see the addendum below.]
 
 ## 2026-08-27 addendum – assembly complete
 
@@ -90,7 +90,8 @@ full drop (Kernel.tar.gz 753 MB + Platform.tar.gz). Input set complete.
   (FTS1BA90A line 1345, WEZ01 line 1369).
 - AWH8 panel.c/h confirmed different from base → delta applied in the bundle.
 - Artifacts: `gts9p-imports.tar.gz`
-  (sha256 bce7f41222453588315f9f7dafe37cb0e2eb8701fdc5216be39dc2a208ff975c),
+  (sha256 bce7f412…, [SUPERSEDED 2026-08-30: use `devices/gts9pwifi/imports/` at repo
+  HEAD — that tarball predates the wacom drivers/input wiring]),
   `build-gts9pwifi.sh`, `x810-extract.sh`.
 
 Remaining runway: fork samsung-gts9p skeleton (gts9u→gts9p rename checklist in

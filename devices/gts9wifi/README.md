@@ -10,8 +10,9 @@ from. The device tree, kernel, and build tooling live upstream:
 - Build tools: `halium-generic-adaptation-build-tools`
   (branch `personal/azkali/gts9-integration`)
 
-The unit is daily-driven on Azkali's UT 24.04-2.x dev build (A13 vendor,
-X710XXU5CYD9 base). This repo carries **our contributions back**, not a fork:
+The reference unit is daily-driven on Azkali's UT 24.04-2.x dev build
+(port-composed A13 fingerprint over the A15-era X710XXU5CYD9 vendor — see
+FIRMWARE.md). This repo carries **our contributions back**, not a fork:
 
 ## What we run/fix on it
 

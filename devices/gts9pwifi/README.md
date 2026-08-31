@@ -46,9 +46,9 @@ and never accepts an OTA.** One accepted update is a one-way door.
    `gts9uwifi-skeleton*.tar.gz`; the pre-audio original survives under that
    name in the archive). Exact recipe incl. the uppercase/identity pass in
    runbook Phase 1.
-2. The Samsung inputs, kept out of git (`archive/osrc/` holds the two smaller
-   OSRC zips; the **base** `SM-X818U_13_Opensource.zip` and the 9.2 GB AWHA
-   factory zip must be re-downloaded — sources and sizes in the runbook).
+2. The Samsung inputs, never shipped in git: re-download the OSRC zips from
+   opensource.samsung.com and the 9.2 GB AWHA factory zip from samfw.com or
+   equivalent — exact names, sizes, and hashes in the runbook and FIRMWARE.md.
 3. Unit prep, build, flash, bring-up ladder (display → touch → WiFi → audio
    → pen). First-boot unknown: panel attach with the bare panel cmdline; the
    pre-planned fix is adding the stock lcd_id args captured in Phase 3.4.

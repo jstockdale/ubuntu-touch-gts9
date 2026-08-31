@@ -11,18 +11,26 @@ paths — was validated against exactly these vintages. A different vintage is
 an untested port: bootloader/dtbo vs vendor skew is a real failure class
 (one vintage, no skew — runbook Phase 3.6.4).
 
-## First rule: match the firmware series to YOUR bootloader binary
+## First rule: match the firmware series to YOUR unit's rev
 
-The bootloader binary revision (the digit after `XXU`/`XXS`) is a one-way
-fuse: flashing a higher-binary package permanently burns the bit fuse to
-that revision. A new-in-box unit ships at **rev 1** — if it ever takes a
-5-series package it becomes a rev-5 unit forever. So:
+**What "rev" means: the bootloader fuse revision** — a one-way hardware bit
+fuse tracked by the digit after `XXU`/`XXS` in a firmware build string
+(`X910XX`**`S5`**`CYG1` = rev 5), read from the `RP SWREV` line in Download
+Mode. Samsung also calls it the "binary"; firmware packages of a given rev
+are that rev's "series" (1-series, 5-series). Flashing a higher-rev package
+**permanently burns the fuse forward** — it can never be lowered.
 
-- **Read your unit's binary in Download Mode first** (`RP SWREV` line).
-- **Use the last firmware of YOUR series** as the port's donor package.
-  A rev-1 unit targets 1-series firmware; a rev-5 unit targets 5-series.
-  Never flash above your current binary unless you deliberately accept
-  the irreversible fuse burn (and never above 5 — that is the cliff).
+**Rev 5 is the last revision whose bootloader can be unlocked. Rev 6 and
+later can NEVER be unlocked** — Samsung removed bootloader unlocking in One
+UI 8, and current official updates are rev 6. A new-in-box unit ships at
+rev 1; one accepted OTA ends its porting usefulness forever.
+
+- **Read your unit's rev in Download Mode first** (`RP SWREV` line — the
+  splash screen misreports).
+- **Use the last firmware of YOUR unit's series** as the port's donor
+  package. A rev 1 unit targets 1-series firmware; a rev 5 unit targets
+  5-series. Never flash above your current rev unless you deliberately
+  accept the irreversible fuse burn (and never above 5 — that is the cliff).
 - The port itself does not require changing series: you extract the donor
   parts from your own series' package and build against those. The
   bring-up mechanism is vintage-agnostic by construction (modules.load is
@@ -32,8 +40,8 @@ that revision. A new-in-box unit ships at **rev 1** — if it ever takes a
 
 **Support policy:** we intend 1-series and 5-series units to both work
 without cross-series reflashing — those are the two bootloader
-generations we own test hardware for. rev-5 is validated (Ultra) /
-daily-driven (11"); rev-1 test hardware is now on hand (new-in-box S9+,
+generations we own test hardware for. rev 5 is validated (Ultra) /
+daily-driven (11"); rev 1 test hardware is now on hand (new-in-box S9+,
 X710, and X910), so the 1-series path is moving from assembled to
 tested. Revisions 2–4 follow the same match-your-series rule (last build
 of your own series); recommended builds for those may be added if test
@@ -44,7 +52,7 @@ hardware appears.
 | | Build | Android / patch | Bootloader binary | Status | Package |
 |---|---|---|---|---|---|
 | **Tab S9 Ultra** (SM-X910, gts9uwifi) | **X910XXS5CYG1** | Android 15 / 2025-07-01 | rev 5 | **validated on silicon** (the lead port) | `XAR-X910XXS5CYG1-20250728211620.zip` — 15,273,971,024 bytes (sha256 below) |
-| **Tab S9+** (SM-X810, gts9pwifi) | **X810XXU1AWHA** | Android 13 / last rev-1 build | rev 1 | port kit assembled against it (port unexecuted) | `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` — exactly **9,225,074,787 bytes**; `unzip -T` must pass |
+| **Tab S9+** (SM-X810, gts9pwifi) | **X810XXU1AWHA** | Android 13 / last rev 1 build | rev 1 | port kit assembled against it (port unexecuted) | `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` — exactly **9,225,074,787 bytes**; `unzip -T` must pass |
 | **Tab S9 11"** (SM-X710, gts9wifi) | X710XXU5CYD9 | Android 15 era / 2025-04-01 patch¹ | rev 5 | daily-driven (Azkali's upstream build pins it) | n/a — Azkali's port ships its own firmware donor tarball; our archived rescue/reference package is **X710XXS5CYG1** (see hashes below) |
 
 ¹ The shipped gts9wifi port's vendor fingerprint reads
@@ -53,13 +61,13 @@ glued to the CYD9 build string. That identity is port-composed (halium-13
 ports assemble the fingerprint); the CYD9 *firmware release* itself is the
 April 2025 / Android-15-era quarterly.
 
-### CYD9 vs CYG1 — sequencing of the two rev-5 vintages in play
+### CYD9 vs CYG1 — sequencing of the two rev 5 vintages in play
 
 `XXU5CYD9` (Azkali's pin) is the **April 2025 full/feature quarterly**
 (XXU train, patch 2025-04-01); `XXS5CYG1` (our archived packages, and the
 Ultra port's donor) is its **security-only successor one quarter later**
 (XXS train, July 2025, patch 2025-07-01). Same Android generation (C =
-third OS = Android 15 era), same bootloader binary 5, identical kernel
+third OS = Android 15 era), same bootloader rev 5, identical kernel
 generation (5.15.153 / KMI 30958166 — the stock kernel strings differ
 only by model/build tag). Flashing CYG1 stock over a CYD9-based unit for
 rescue is lateral and fuse-neutral, and the CYD9-donor / CYG1-donor
@@ -67,7 +75,7 @@ interop is exactly what the working family ports already demonstrate.
 
 ## Recommended per bootloader series
 
-| Device | rev-1 unit (Android-13 target) | rev-5 unit (Android-15 target) |
+| Device | rev 1 unit (Android-13 target) | rev 5 unit (Android-15 target) |
 |---|---|---|
 | SM-X910 (Ultra) | **X910XXU1AWHA** (last A13 build, 2023-08-20) | **X910XXS5CYG1** (A15, tested — the lead port) |
 | SM-X810 (S9+) | **X810XXU1AWHA** (last A13 build; the assembled kit target) | X810XXS5CYG1 (A15, family-analogous, untested) |
@@ -77,26 +85,26 @@ interop is exactly what the working family ports already demonstrate.
 sammobile's US (XAR) firmware history for X710 and X910 (both show AWHA,
 2023-08-20, as the final Android-13 release before the Android-14 BWK6
 build); X810 matches per our own assembled-kit record. All three are
-bootloader binary 1.
+bootloader rev 1.
 
-Why AWHA and not a later binary-1 build: these tablets kept bootloader
-binary **1 through Android 14** (e.g. `XXU1BWK6`, Nov 2023) and only
-fused to binary 5 at Android 15. So "last binary-1" (an A14 build) and
+Why AWHA and not a later rev 1 build: these tablets stayed at bootloader
+**rev 1 through Android 14** (e.g. `XXU1BWK6`, Nov 2023) and only fused
+to rev 5 at Android 15. So "the last rev 1 build" (an A14 build) and
 "last Android-13" (AWHA) are different — and this port needs the
 **Android-13 vendor base** (halium-13 / 5.15.153 kernel generation), so
 **target AWHA**, not BWK6.
 
 New-in-box note: a unit manufactured later may ship pre-loaded with a
-newer **binary-1** build (even Android 14 BWK6). Flashing AWHA onto it is
-a lateral flash *within binary 1* — no fuse burn, allowed — because you
-are not going above the unit's current bootloader binary. (Anti-rollback
+newer **rev 1** build (even Android 14 BWK6). Flashing AWHA onto it is
+a lateral flash *within rev 1* — no fuse burn, allowed — because you
+are not going above the unit's current rev. (Anti-rollback
 is keyed to the bootloader binary, not the Android version.) Read the
 binary in Download Mode first to be sure it is still 1.
 
 Treat any not-tested cell as an untested port: extract, build, and walk
 the bring-up ladder rather than assuming parity.
 
-Verification the extractors enforce for you:
+Verification the extractors provide (x810 enforces; x910 reports):
 
 - `tools/extract/x910-extract.sh` — parses the LP metadata and reports
   `SUPER_DEVICE_SIZE`; the X910 value must be **11,744,051,200**
@@ -115,7 +123,7 @@ these before extracting:
 
 | Archive | Bytes | SHA256 |
 |---|---|---|
-| `SM-X810-XAR-X810XXU1AWHA_fac.zip` | 9,225,074,787 | `9df2a2cd26fe080e99fb6946e95bdf1415708087008dd27ae6b42194b9553c3e` |
+| `SM-X810-XAR-X810XXU1AWHA_fac.zip` (the samfw `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip`, archived under a shortened name — same bytes) | 9,225,074,787 | `9df2a2cd26fe080e99fb6946e95bdf1415708087008dd27ae6b42194b9553c3e` |
 | `XAR-X710XXS5CYG1-20250728211550.zip` | 15,272,300,480 | `2714fc70cd3ae61e83fc79466a1379103a5e4524791ad00cb8f7a08036f209b1` |
 | `XAR-X910XXS5CYG1-20250728211620.zip` | 15,273,971,024 | `a14779c80b6d93b0092c1a7f29e8a4cd5f25954001b6b3b6c4312e2ea9117a7f` |
 
@@ -124,7 +132,7 @@ X710 CYG1 `be7dd8f3c319e118cafb619f9e1db0cd`;
 X910 CYG1 `ab94491d2a8109af2b52b2098ced25bb`.
 
 All three are US (XAR) region packages. The two CYG1 archives are the
-rev-5 rescue/reference set (pulled 2025-07-28); the AWHA archive is the
+rev 5 rescue/reference set (pulled 2025-07-28); the AWHA archive is the
 S9+ port's donor. Samsung firmware is not redistributed from this repo —
 source your own copy (samfw.com or equivalent) and hash-verify it. The
 X710/X910 **1-series (AWHA)** packages recommended above for the
@@ -146,8 +154,8 @@ downloaded.
 - **Rev 5 is the last unlockable revision; rev 6 is terminal.** One UI 8
   removed bootloader unlocking globally. Download Mode is the only
   authoritative readout (the splash-screen "OEM LOCK" line misreports).
-- **Never accept an OTA on a project unit.** Current fleet builds are
-  binary 6 — past the cliff. This matters doubly for the rev-1 S9+: one
+- **Never accept an OTA on a project unit.** Current official builds are
+  rev 6 — past the cliff. This matters doubly for the rev 1 S9+: one
   accepted update permanently ends its usefulness.
 - Cross-major restores go through Odin with **BL + AP + full CSC** (not
   HOME_CSC). Archive your factory package before first flash — old builds

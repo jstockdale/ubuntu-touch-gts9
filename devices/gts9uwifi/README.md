@@ -21,7 +21,7 @@ UDFPS untested. Ledger: PORT-STATE.md §6.
 ## Contents
 
 - `build-gts9uwifi.sh` — canonical build wrapper (**V3**, the audio-gate
-  version; identical to the "(12)" copy used for the S9+ work). Stages
+  version). Stages
   skeleton + imports + firmware parts, clones Azkali's kernel, builds
   kernel/techpacks, swaps vendor_dlkm modules, assembles super at the
   PIT-exact 11,744,051,200, packages the flashable zip.
