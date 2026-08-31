@@ -172,6 +172,9 @@ earlier AWG/AWF build (decision point in 3.6).
 
 ### 3.2 OEM unlocking toggle
 
+(The verified fail-proof toggle-arming sequence — manual clock, Samsung
+account sign-in, no OTA — is written up in the repo-root `FLASHING.md`.)
+
 Developer options > OEM unlocking. If hidden or greyed: set date/time
 manually first; if it still demands a network check, disable auto-update
 (Settings > Software update > toggle off), connect briefly, get the toggle,

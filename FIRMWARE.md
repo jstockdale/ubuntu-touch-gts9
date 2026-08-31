@@ -21,9 +21,11 @@ are that rev's "series" (1-series, 5-series). Flashing a higher-rev package
 **permanently burns the fuse forward** — it can never be lowered.
 
 **Rev 5 is the last revision whose bootloader can be unlocked. Rev 6 and
-later can NEVER be unlocked** — Samsung removed bootloader unlocking in One
-UI 8, and current official updates are rev 6. A new-in-box unit ships at
-rev 1; one accepted OTA ends its porting usefulness forever.
+later can NEVER be unlocked.** One UI 8 hides the OEM Unlocking toggle, but
+the fuse decides: a rev 5 unit that already took One UI 8.0 can be rolled
+back to One UI 7 and unlocked (see [FLASHING.md](FLASHING.md)). Current
+official updates are rev 6; a new-in-box unit ships at rev 1, and one
+accepted OTA ends its porting usefulness forever.
 
 - **Read your unit's rev in Download Mode first** (`RP SWREV` line —
   authoritative; the boot-splash "OEM LOCK" line is usually right but has
@@ -161,9 +163,11 @@ downloaded.
 - **Never accept an OTA on a project unit.** Current official builds are
   rev 6 — past the cliff. This matters doubly for the rev 1 S9+: one
   accepted update permanently ends its usefulness.
-- Cross-major restores go through Odin with **BL + AP + full CSC** (not
-  HOME_CSC). Archive your factory package before first flash — old builds
-  rot off mirrors, and your archived copy is the unit's permanent way back.
+- Stock flashing goes through **Odin 3.14** (Windows) loading **BL + AP +
+  CSC or HOME_CSC** (HOME_CSC preserves data; full CSC wipes — required for
+  cross-major rollbacks). Walkthrough: [FLASHING.md](FLASHING.md). Archive
+  your factory package before first flash — old builds rot off mirrors, and
+  your archived copy is the unit's permanent way back.
 - If a unit ships on an EARLIER build than the target vintage, Odin-align
   it to the target first so bootloader/dtbo/vendor match the extracted
   parts (runbook Phase 3.6.4); then re-capture stock `/proc/cmdline`.

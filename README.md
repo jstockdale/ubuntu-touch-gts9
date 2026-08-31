@@ -31,9 +31,11 @@ on the Download Mode screen. Flashing firmware with a higher rev burns the
 fuse forward **permanently** — it can never be lowered again.
 
 **Rev 5 is the last revision whose bootloader can be unlocked. Rev 6 and
-later can NEVER be unlocked** — Samsung removed bootloader unlocking in
-One UI 8, and current official updates are rev 6. One accepted OTA on a
-rev ≤ 5 tablet permanently ends its usefulness for porting. Therefore:
+later can NEVER be unlocked.** One UI 8 hides the OEM Unlocking toggle, but
+the FUSE is what decides: a unit that took One UI 8.0 while still fuse
+rev 5 can be rolled back to One UI 7 and unlocked ([FLASHING.md](FLASHING.md)).
+Current official updates are rev 6, so one accepted OTA on a rev ≤ 5 tablet
+permanently ends its usefulness for porting. Therefore:
 
 - **Never accept an OTA on a unit you intend to port.** Keep it offline
   through setup; disable auto-update.
@@ -108,7 +110,8 @@ This is the proven pipeline, but it is a from-source build, not a download.
 You need a Linux build box (~50 GB free), an unlocked rev ≤ 5 unit with the
 family TWRP, and your own donor firmware package:
 
-1. Verify your unit's rev and obtain the matching donor firmware,
+1. Verify your unit's rev, unlock, and install TWRP —
+   [FLASHING.md](FLASHING.md) — and obtain the matching donor firmware,
    hash-verified — [FIRMWARE.md](FIRMWARE.md).
 2. Extract the donor partitions:
    `tools/extract/x910-extract.sh <factory.zip>` (it reports the PIT-exact
@@ -148,6 +151,8 @@ testing on hardware.
 - [`FIRMWARE.md`](FIRMWARE.md) — exact stock firmware vintages the ports are
   built against, per-rev recommendations, package hashes, and the
   fuse-safety rules. Read before downloading anything.
+- [`FLASHING.md`](FLASHING.md) — Odin stock-firmware flashing, the rev 5
+  unlock walkthrough, TWRP installation, and sideloading Ubuntu Touch.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — operating rules for anyone with a
   device in hand, plus how to contribute.
 - `devices/<codename>/` — per-device material. `gts9uwifi/` is complete

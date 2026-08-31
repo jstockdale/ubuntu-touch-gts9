@@ -31,7 +31,8 @@ paths; `NOTICE` explains the licensing scope).
 Terminology: **rev N** = the bootloader fuse revision — see the bold warning
 section in the [README](README.md#-the-bootloader-fuse--read-this-before-anything-else)
 and [FIRMWARE.md](FIRMWARE.md). Rev 5 is the last unlockable; rev 6+ can
-never be unlocked.
+never be unlocked (a rev 5 unit on One UI 8.0 can still be rolled back and
+unlocked — [FLASHING.md](FLASHING.md)).
 
 ### Persistence
 

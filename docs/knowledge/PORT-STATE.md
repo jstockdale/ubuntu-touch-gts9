@@ -374,7 +374,9 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 ### Firmware / bootloader
 - **Bootloader bit fuse** = digit after XXU/XXS in the build string, visible in Download Mode
   (`RP SWREV`). **Rev 5 = last unlockable** (Android 15 / One UI 7, e.g. X710XXS5CYG1);
-  **rev 6 = terminal** (One UI 8.5, e.g. X710XXS6DZB6). One UI 8 removed unlocking globally. `[install-boot §1]`
+  **rev 6 = terminal** (One UI 8.5, e.g. X710XXS6DZB6). One UI 8 hides the OEM Unlocking
+  toggle, but the fuse decides: a fuse-rev 5 unit on One UI 8.0 rolls back to One UI 7
+  (Odin BL+AP+full CSC) and unlocks normally [2026-08-31, owner-confirmed]. `[install-boot §1]`
 - **Per-unit firmware:** gts9wifi pins **X710XXU5CYD9** (2025-04 patch; the "A13"
   in the shipped fingerprint `:13/TP1A.../X710XXU5CYD9` is port-composed — the
   CYD9 firmware release itself is the April-2025/A15-era quarterly, one XXS
