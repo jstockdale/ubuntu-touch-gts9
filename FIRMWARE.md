@@ -97,17 +97,13 @@ to rev 5 at Android 15. So "the last rev 1 build" (an A14 build) and
 **Android-13 vendor base** (halium-13 / 5.15.153 kernel generation), so
 **target AWHA**, not BWK6.
 
-New-in-box note – **partially unverified, confirm during rev 1
-validation**: a unit manufactured later may ship pre-loaded with a newer
-rev 1 build (rev 1 spans through Android 14 BWK6 per the firmware
-history). We EXPECT flashing AWHA onto such a unit to be a lateral,
-fuse-safe downgrade within rev 1 – the same mechanism as the confirmed
-One UI 8.0 → 7.0 rollback on rev 5 units, where anti-rollback gated on
-the fuse digit rather than the Android version – but an A14 → A13
-downgrade within rev 1 has NOT been performed on these tablets yet. Read
-the rev in Download Mode first; if your unit shipped on a post-AWHA
-rev 1 build, treat the AWHA downgrade as an experiment (with the factory
-package archived) until this note is upgraded to confirmed.
+New-in-box note: every new-in-box unit observed so far ships on
+Android 13 at rev 1, so the AWHA target is either already installed or
+one same-Android-13 flash away. Verify the rev in Download Mode before
+anything regardless. (Rev 1 technically spans through the Android 14
+BWK6 build per the firmware history, but a NIB unit shipping A14 has not
+been observed; if you ever meet one, treat getting it to AWHA as
+unverified territory.)
 
 Treat any not-tested cell as an untested port: extract, build, and walk
 the bring-up ladder rather than assuming parity.
