@@ -63,7 +63,9 @@ achieved 2026-08-04 `[porting-orig.p2]`; first fully working boot (charger-mode 
 - **Touch** — Goodix GT9916 `goodix_ts_berlin` at i2c 66-005d. (TCLM calibration data empty —
   functional, accuracy worth a look.) Enumeration race across boots noted. `[porting-orig.p3][ultra-main.p1]`
 - **WiFi** — kiwi_v2 (WCN785x), full association + DHCP, NetworkManager-managed. Needs
-  `cfg80211`+`qca_cld3_kiwi_v2` loaded (persisted in modules-load.d). `[porting-orig.p4]`
+  `cfg80211`+`qca_cld3_kiwi_v2` loaded. [CORRECTED 2026-08-30: persistence was
+  on-device only (`gts9u-wifi.conf` orphan); the skeleton's modules-load.d
+  carried only the sm5714 pair. NOW baked (parity Tier 1).] `[porting-orig.p4]`
 - **Bluetooth** — power sequencing completes, btfm_slim probed, hci0 via bluebinder. `[porting-orig.p4][ultra-main.p1]`
 - **Battery/charging** — SM5714 fuelgauge honest (was 0% → UPower critical-poweroff loop);
   charging works, MUIC/PD via finit-loaded modversion-locked modules. `[porting-orig.p3][audio-config.p3 §2]`
@@ -320,7 +322,12 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
   clear caches, reboot. `[install-boot §2]`
 - **Lomiri fd exhaustion** — `LimitNOFILE=65536` drop-in on lomiri-full-greeter (mitigation). `[lomiri-crash.p1]`
 - **GLES-Qt reversal** — remove desktop-GL krita, reinstall `libqt5gui5-gles`/`libqt5quick5-gles`/
-  `qtubuntu-android`/metapackages; apt pin `/etc/apt/preferences.d/no-desktop-qt5` (Pin-Priority -1). `[lomiri-crash.p2]`
+  `qtubuntu-android`/metapackages; apt pin `/etc/apt/preferences.d/no-desktop-qt5` (Pin-Priority -1).
+  [CORRECTED 2026-08-30: the pin had been recorded as landed but existed
+  nowhere as a file, and its on-device application was never confirmed.
+  Artifact now at `fixes/hygiene/no-desktop-qt5` + baked in the Ultra
+  skeleton; 11" install via the post-flash script; verify on-device per
+  `docs/checklists/gts9wifi-next-access.md`.] `[lomiri-crash.p2]`
 
 ### Infra
 - **Root FS grow** — TWRP fastbootd (userspace) `delete-logical-partition product`+`system_ext`,
@@ -336,6 +343,9 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 - F3/F4/F7/F9: build wrapper — preflight (zip/file/pahole/perl), atomic firmware tarball, host-arch
   lpmake detection, PARTS→SRC_PARTS rename.
 - F5: prune stale 11" panel `.dat` + STM touch fw from the Ultra skeleton.
+  [CORRECTED 2026-08-30: F5 had been recorded as landed but was never
+  executed — the three files were still in the skeleton. Executed in
+  parity Tier 1.]
 - F6: super.sh strict mode.
 - F8: goodix_ts_berlin missing = build-fatal; wez01 missing = warning.
 - Plus audio-overlay sanity gate (V3). `[ultra-main.p1,p2][RECON-build-scripts]`
@@ -426,9 +436,13 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 
 **gts9uwifi (Ultra):**
 4. Sensors HAL (ISensors@2.1 multihal not registering) — genuinely open. `[porting-orig.p4]`
-5. Bake the resized system-LP size + group budget into `build-gts9uwifi.sh` (lpmake stanza). `[infra §1]`
-6. Bake the touchpad `touchpad,invert <0x01 0x00 0x00>` DTS fix into a v5 build; verify (one-bit
-   mirror risk); then flip daemon default 270→0. `[peripherals §1]`
+5. ~~Bake the resized system-LP size + group budget into the pipeline.~~ **DONE
+   2026-08-30** (deviceinfo 7600M + super.sh v3 group-at-capacity; parity Tier 2). `[infra §1]`
+6. Touchpad: daemon now BAKED in the skeleton (default 270; Tier 1). Remaining:
+   the `touchpad,invert <0x01 0x00 0x00>` DTS bake — deliberately deferred until
+   the stm32_pogo DT parser is read (one-bit mirror risk); reconcile the sed'd
+   copy in the pika working tree either way; after the bake, flip daemon
+   default 270→0. `[peripherals §1]`
 7. USB-C host mode dead; cameras/UDFPS untested; touch enumeration race across boots. `[porting-orig.p4,p5]`
 8. Boot-time PD negotiation lands plain USB/rp(2) (pdic loads at t≈12s) — one replug renegotiates. `[audio-config.p3]`
 
@@ -453,5 +467,37 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 18. gnuradio/qt6 apt install fails (qt6-base-abi no provider) — use radioconda under /home. `[infra §1]`
 
 **Persistence discipline (recurring):** every image flash wipes the rootfs and every userdata wipe
-removes /home; fixes that survive live on /data or in the skeleton overlay. Post-flash checklist:
-audio-fix installer, LimitNOFILE drop-in, desktop-Qt5 apt pin. `[install-boot §2][lomiri-crash.p2]`
+removes /home; fixes that survive live on /data or in the skeleton overlay. Post-flash:
+run `fixes/post-flash/<device>-post-flash.sh` (and keep the kit off-device). `[install-boot §2][lomiri-crash.p2]`
+
+**New ledger items (2026-08-30 parity audit):**
+19. ~~Merge the two swap-vendor-modules.sh generations (dedupe + audit).~~ **DONE**
+    (v3 in common/ + skeleton, report-only default; per-device allowlist triage
+    still pending — do it on each device's next build). `[E-build-scripts-parity]`
+20. Send the goodix-berlin import + wiring + `CONFIG_TOUCHSCREEN_GOODIX_BRL=m`
+    upstream to Azkali's kernel tree — gives Goodix-rev 11" units working touch;
+    fully formed in `devices/gts9uwifi/imports/`, currently stranded. `[F-kernel-imports]`
+21. Three-panel merged display `msm/Kbuild` (GTS9+GTS9P+GTS9U, `_SUFFIXED`
+    vars): the two import bundles whole-file-overwrite Kbuild and are mutually
+    exclusive on a shared tree (fine today — each build clones fresh). Do when
+    unifying trees; until then never apply both bundles to one checkout. `[F-kernel-imports]`
+22. update-binary v5 sed-safe device check: verified by fork simulation
+    (13/13 gates, correct accept/reject matrix) but not yet exercised on a
+    physical flash — eyeball its ui_print output on the next TWRP install. `[parity Tier 2]`
+23. 11" preventive audio hardening installer created (bugs 1/2/5,
+    `fixes/audio/gts9wifi-audio-hardening-install.sh`) — INSTALL on next
+    device access via the post-flash script. `[D-audio-parity §3]`
+
+## 7. 2026-08-30 parity remediation (summary of what changed)
+
+Five-tier remediation executed against the parity-audit findings (full audit:
+`archive/notes/parity/`, review `docs/reviews/PARITY-REVIEW-2026-08-30.md`):
+Tier 1 skeleton gaps (WiFi persistence, GROUP=audio, tp-rotate baked @270,
+LimitNOFILE, apt pin, F5 prune, dedupe ramdisk lists, identity strings, h2w
+uinput belt, v4 header); Tier 2 build system (merged swap v3, super.sh v3
+LP budget + 7600M root, make-flashable v2, update-binary v5 sed-safe check,
+explicit SUPER export, true comments, wez01 FATAL both devices); Tier 3
+gts9p kit (runbook fork recipe incl. uppercase pass, wacom input wiring
+added to gts9p-imports, new build gates); Tier 4 gts9wifi hardening + pen
+installer + hygiene artifacts + post-flash kits + next-access checklist;
+Tier 5 these record corrections + upstream submission packs.

@@ -12,6 +12,14 @@ Grading as before: **[CONFIRMED]** = direct source/log evidence; **[CORRECTED]**
 claim overturned, with the correcting evidence; **[INFERRED]** = consistent but not
 directly verified.
 
+> **Editorial note (2026-08-30 parity audit):** this doc names **va/wsa/wsa2**
+> as the macro set gating card registration; the later syntheses (PORT-STATE §3,
+> the knowledge-transfer doc) say the Ultra DT enables **va/rx/tx** with
+> wsa/wsa2 disabled (`num-macros=3`). The observations below (which .ko files
+> were absent on the failed boot) stand as recorded; treat the *interpretation*
+> of which macros gate the card per PORT-STATE. Operationally moot — the
+> bringup walks the whole modules.load either way.
+
 ---
 
 ## Source provenance
