@@ -1,11 +1,11 @@
-# Ubuntu Touch audio on Samsung Galaxy Tab S9 — knowledge transfer
+# Ubuntu Touch audio on Samsung Galaxy Tab S9 – knowledge transfer
 For troubleshooting the **11" Tab S9 (gts9wifi, SM-X710 / SM-X716B)**.
 Derived from a full debugging campaign on the **Ultra (gts9uwifi, SM-X910)**,
 UT 24.04 / Halium 13 / kalama platform, 2026-08. Hand this to a fresh Claude
 session; it assumes no prior context.
 
 ────────────────────────────────────────────────────────────────────────
-## 0. READ THIS FIRST — the 11" is the reference port
+## 0. READ THIS FIRST – the 11" is the reference port
 
 The Ultra port (where all findings below were derived) was built ON TOP OF
 **Azkali's gts9wifi (11") port**. That means:
@@ -18,7 +18,7 @@ The Ultra port (where all findings below were derived) was built ON TOP OF
 2. The two devices share the **entire audio architecture**: same SoC
    (SM8550/kalama), same Qualcomm audio DSP stack (lpass-cdc macros, AGM/PAL,
    Samsung AHAL), same Halium wrapper shim, same UT PulseAudio-droid stack.
-   Every mechanism below transfers. What differs is DATA, not structure —
+   Every mechanism below transfers. What differs is DATA, not structure –
    see §7 for the device-specific deltas to verify on the 11".
 3. Reference repos (Azkali, gitlab.com/azkali-samsung and git.codelinaro.org):
    - audio-kernel @ android13-5.15-halium
@@ -33,7 +33,7 @@ it in ~23 debugging rounds.
 ────────────────────────────────────────────────────────────────────────
 ## 1. THE ARCHITECTURE (the signal path, and where each bug lives)
 
-Sound on this stack traverses two worlds — the host (Ubuntu/glibc) and the
+Sound on this stack traverses two worlds – the host (Ubuntu/glibc) and the
 Android container (Halium/bionic):
 
 ```
@@ -56,25 +56,25 @@ nothing to do with the card: **droid-extevdev** aborting PA on jackless
 hardware (bug #4).
 
 Key files/paths (verify names on 11", but expect identical):
-- `/sys/kernel/snd_card/card_state` — 0/1, the master readiness bit
-- `/sys/kernel/aud_dev/state` — companion node
-- `/proc/snd_debug_proc/sdp_boot_log` — Samsung's 64K boot log; the ONLY
+- `/sys/kernel/snd_card/card_state` – 0/1, the master readiness bit
+- `/sys/kernel/aud_dev/state` – companion node
+- `/proc/snd_debug_proc/sdp_boot_log` – Samsung's 64K boot log; the ONLY
   place "snd_card is ONLINE" is printed (NOT dmesg)
-- `/android/vendor_dlkm/lib/modules/` — the DLKM .ko files + modules.load
-- `/android/vendor/lib64/hw/audio.primary.kalama.so` — the AHAL
-- `/android/system/lib64/hw/audio.hidl_compat.default.so` — the shim
+- `/android/vendor_dlkm/lib/modules/` – the DLKM .ko files + modules.load
+- `/android/vendor/lib64/hw/audio.primary.kalama.so` – the AHAL
+- `/android/system/lib64/hw/audio.hidl_compat.default.so` – the shim
 - Container: `android.hardware.audio.service_64` (the vendor HAL service)
-- Property: `vendor.audio.use.primary.default` — the latch (bug #2)
+- Property: `vendor.audio.use.primary.default` – the latch (bug #2)
 
 ────────────────────────────────────────────────────────────────────────
-## 2. THE FIVE-BUG CHAIN (each masks the next — this is why it's hard)
+## 2. THE FIVE-BUG CHAIN (each masks the next – this is why it's hard)
 
 The defining property: fixing any one bug reveals the next, so partial fixes
 look like failures. Symptoms overlap. Only a systematic layer-by-layer walk
 (and, at the end, a core dump) untangles it. Below, each bug: SYMPTOM →
 ROOT CAUSE → FIX → HOW TO CONFIRM on the 11".
 
-### BUG #1 — Module load storm: sound card never appears
+### BUG #1 – Module load storm: sound card never appears
 
 **Symptom:** `/proc/asound/cards` shows "no soundcards"; `card_state` reads
 empty or 0; nondeterministic across boots (works ~1 boot in N, or comes up
@@ -83,9 +83,9 @@ minutes late). PulseAudio finds no droid sinks.
 **Root cause:** Samsung's `/vendor/bin/vendor_modprobe.sh` (launched from
 init.qti.kernel.rc) backgrounds EVERY modprobe in parallel and discards exit
 codes. If the modules.load list is duplicated (ours was 4×, a build-pipeline
-artifact — CHECK the 11"'s list), the spawn storm multiplies and modules drop
+artifact – CHECK the 11"'s list), the spawn storm multiplies and modules drop
 randomly. The critical dependency: **rx-macro and tx-macro probes DEFER until
-va-macro is registered, BY DESIGN** —
+va-macro is registered, BY DESIGN** –
 `lpass_cdc_is_va_macro_registered()` in lpass-cdc-rx-macro.c (~line 4669) and
 lpass-cdc-tx-macro.c (~2222) return -EPROBE_DEFER. So if
 `lpass_cdc_va_macro_dlkm` loses the race, rx/tx defer forever, the machine
@@ -96,16 +96,16 @@ drops → the card_state node doesn't even exist.
 (b) A boot service that walks modules.load itself (deduped, blocklist-honored)
 and inserts every hole. Healthy boot = no-op. On the Ultra, a single
 `insmod .../lpass_cdc_va_macro_dlkm.ko` produced register-macro ×3 → card
-registered → ONLINE in a 70ms cascade — proof the keystone is va.
+registered → ONLINE in a 70ms cascade – proof the keystone is va.
 
 **Confirm on 11":** `cat /proc/asound/cards`; if empty, check
 `lsmod | grep lpass_cdc` for which macros loaded, and
 `cat /sys/kernel/debug/devices_deferred` for rx/tx waiting. If the list is
 `wc -l /android/vendor_dlkm/lib/modules/modules.load` and shows 4× the unique
 count, that's the storm amplifier. NOTE: the 11" may have a DIFFERENT set of
-enabled macros (§7) — but va is the SoC-level keystone regardless.
+enabled macros (§7) – but va is the SoC-level keystone regardless.
 
-### BUG #2 — Samsung's fallback latch: adev_open refuses forever
+### BUG #2 – Samsung's fallback latch: adev_open refuses forever
 
 **Symptom:** Card is ONLINE (card_state=1) but PulseAudio still can't open
 audio; container logcat shows `AHAL: AudioDevice: adev_open: 2786: fail to
@@ -121,7 +121,7 @@ name and the "sndcard is not active" string are both baked into
 `audio.primary.kalama.so` (confirm: `strings` it). This ONE property explains
 every "card is up but still no audio" symptom.
 
-**Fix:** `setprop vendor.audio.use.primary.default false` — non-persistent, so
+**Fix:** `setprop vendor.audio.use.primary.default false` – non-persistent, so
 re-set on every boot AFTER the card is ONLINE. Whether the initial `true` is a
 vendor build.prop default or purely runtime-set was never fully pinned; clear
 it unconditionally to cover both.
@@ -130,44 +130,44 @@ it unconditionally to cover both.
 a live card, this is the wall. Set it false, then restart the container HAL
 (bug #5) and retry.
 
-### BUG #3 — Halium shim swallows errors → PulseAudio SIGSEGV
+### BUG #3 – Halium shim swallows errors → PulseAudio SIGSEGV
 
 **Symptom:** With any upstream failure (e.g. the latch above), PulseAudio dies
-with **SIGSEGV** — under systemd it's a crash-loop; foreground it's a hard
+with **SIGSEGV** – under systemd it's a crash-loop; foreground it's a hard
 segfault. Logcat shows the factory returning `openDevice() error -19` but
-droid-util prints "Opened hw audio device version 2.0" ANYWAY (the tell — a
+droid-util prints "Opened hw audio device version 2.0" ANYWAY (the tell – a
 success message over a failure). Last logcat line before death is
 `adev_init_check`.
 
 **Root cause:** `audio.hidl_compat.default.so` (Halium's wrapper HAL,
 source: `android_vendor_halium_hardware/audio/audio_hw.cpp`). Its `adev_open`
 logs the factory error then RETURNS 0 with `deviceIface` left null; the first
-forwarded call — `adev_init_check` — dereferences the null sp<> and crashes.
+forwarded call – `adev_init_check` – dereferences the null sp<> and crashes.
 Core-verified on Ultra: `signal=11 SEGV_MAPERR fault_addr=0x0`,
 PC at shim+0x2280, LR=PC-8, x0=0. The bug is byte-identical across halium-12.0
 through 16.0 and master.
 
 **Fix:** This is upstream-patchable (early-return in adev_open on factory
-failure — a patch was written: search for
+failure – a patch was written: search for
 `0001-audio_hw-fail-adev_open-when-the-devices-factory-can.patch`). BUT the
-shim crash is a SYMPTOM — it only fires because something upstream failed.
+shim crash is a SYMPTOM – it only fires because something upstream failed.
 Fix bugs #1/#2/#5 and the shim never gets a null. So: the shim patch is
 hardening (converts future failures into log lines instead of core dumps),
-not the primary fix. Don't chase the SEGV as the root cause — it's the messenger.
+not the primary fix. Don't chase the SEGV as the root cause – it's the messenger.
 
 **Confirm on 11":** if PA segfaults at droid-card load, get a core dump
 (`sysctl -w kernel.core_pattern=/home/phablet/core.%e.%p`, add
-`LimitCORE=infinity`), and the faulting library naming the shim confirms it —
+`LimitCORE=infinity`), and the faulting library naming the shim confirms it –
 but the real question is what upstream failure fed it the null. Look at the
 container logcat for the -19/-22 that preceded it.
 
-### BUG #4 — droid-extevdev aborts PA on a jackless tablet
+### BUG #4 – droid-extevdev aborts PA on a jackless tablet
 
 **Symptom:** PA reaches "Opened hw audio device" and even creates droid sinks,
 then ABORTS (SIGABRT, rc=134) with:
 `droid-extevdev.c: could not start input device detection` immediately
 followed by `Assertion 'e' failed at ../src/pulse/mainloop.c: ...
-mainloop_io_free()`. This is INDEPENDENT of bugs #1-3 — it fires even with a
+mainloop_io_free()`. This is INDEPENDENT of bugs #1-3 – it fires even with a
 perfectly working card.
 
 **Root cause:** UT's jack-detection code (droid-extevdev, in
@@ -185,14 +185,14 @@ non-fatal + guard the null free) is also possible but not yet written.
 
 **Confirm on 11":** does PA abort with the mainloop_io_free assert AFTER
 creating sinks? Then it's this. `ls /sys/class/switch/` and check
-`/proc/bus/input/devices` for any `SW_HEADPHONE_INSERT` device — if none, the
+`/proc/bus/input/devices` for any `SW_HEADPHONE_INSERT` device – if none, the
 virtual-jack daemon is the fix. NOTE: if the 11" cover/config provides a real
-headset switch, this bug may not fire — verify before assuming.
+headset switch, this bug may not fire – verify before assuming.
 
-### BUG #5 — Stale container HAL + node permissions
+### BUG #5 – Stale container HAL + node permissions
 
 **Symptom (5a):** Everything above fixed, card ONLINE, latch cleared, but
-adev_open still fails — because the container's `vendor.audio-hal` service
+adev_open still fails – because the container's `vendor.audio-hal` service
 started at boot when the card was DOWN, and its in-process AGM is permanently
 in a failed state.
 
@@ -200,7 +200,7 @@ in a failed state.
 latch is cleared; wait for `init.svc.vendor.audio-hal` = running.
 
 **Symptom (5b):** AGM inside the container can't read card_state even when it's
-1 — because the node is `0660 root:audio` (host gid), and the container's AGM
+1 – because the node is `0660 root:audio` (host gid), and the container's AGM
 opens it O_RDWR from the container's own uid space where host gid 29 is
 meaningless.
 
@@ -225,7 +225,7 @@ exactly this; port it to the 11" (adjusting module/device names per §7):
 5. `setprop ctl.restart vendor.audio-hal`; wait init.svc = running; sleep ~2s. [bug #5a]
 6. (If bug #4 applies) ensure the virtual jack device exists.
 7. Touch a flag file (e.g. /run/audio-ready).
-8. PulseAudio's systemd unit GATES on that flag — hard-fail if it never
+8. PulseAudio's systemd unit GATES on that flag – hard-fail if it never
    appears (a `-`-prefixed / non-gated start races into the crash loop and
    re-triggers the latch). [ties #2/#3 together]
 
@@ -240,14 +240,14 @@ The UT PulseAudio user unit needs a drop-in
 (`~/.config` or `/etc/systemd/user/pulseaudio.service.d/`). The working one on
 the Ultra:
 - `ExecStartPre` gate: `until [ -e /run/<ready-flag> ]; do sleep 1; done`
-  (timeout ~150s, NO `-` prefix — must fail if not ready)
+  (timeout ~150s, NO `-` prefix – must fail if not ready)
 - `ExecStart=` reset, then
   `ExecStart=/usr/bin/env -u HYBRIS_USE_VENDOR_NAMESPACE /usr/bin/pulseaudio
    --daemonize=no --log-target=journal` (the `-u` strips the namespace var; see
-  exoneration note — with the container-HAL path this is the config that works)
+  exoneration note – with the container-HAL path this is the config that works)
 - Sandbox relaxations were included during debugging
   (MemoryDenyWriteExecute=no, SystemCallFilter=, LockPersonality=no,
-  RestrictNamespaces=no) but were NEVER PROVEN necessary — see §5. They may be
+  RestrictNamespaces=no) but were NEVER PROVEN necessary – see §5. They may be
   removable; re-tighten one at a time if you care.
 
 Stock UT ships a drop-in that sets HYBRIS_USE_VENDOR_NAMESPACE=1 and PULSE_SCRIPT.
@@ -255,7 +255,7 @@ Watch for drop-in merge order (later files override ExecStart). Consolidate to
 ONE drop-in to avoid roulette.
 
 ────────────────────────────────────────────────────────────────────────
-## 5. EXONERATED SUSPECTS — do NOT waste time here
+## 5. EXONERATED SUSPECTS – do NOT waste time here
 
 We burned many rounds on these. All PROVEN irrelevant to the SEGV:
 
@@ -264,21 +264,21 @@ We burned many rounds on these. All PROVEN irrelevant to the SEGV:
   Type=notify): relaxing them did NOT fix; the crash reproduced foreground with
   NO sandbox. Not the cause.
 - **HYBRIS_USE_VENDOR_NAMESPACE**: crash reproduced with it both set and unset.
-  (Nuance: with it SET, the HAL loads in-process and fails CLEANLY — no sinks,
+  (Nuance: with it SET, the HAL loads in-process and fails CLEANLY – no sinks,
   no crash. The working config uses the container-service path with it stripped.)
 - **LD_PRELOAD=libtls-padding.so**: exonerated for PA (crash without it). BUT it
-  really does break `logcat` via lxc-attach — use `--clear-env` for logcat.
+  really does break `logcat` via lxc-attach – use `--clear-env` for logcat.
 - **HYBRIS_LD_LIBRARY_PATH**: exonerated.
 - **Host /dev/snd permissions**: fine (root:audio 0660, phablet in audio group,
   controlC0 opens rw). The perms problem that mattered was CONTAINER-side (5b).
-- **Container HAL library health**: audio.primary.kalama.so dlopens fine — the
+- **Container HAL library health**: audio.primary.kalama.so dlopens fine – the
   AHAL log lines print from inside it. Not a missing-dependency problem.
 - **socket activation / Type=notify / LISTEN_FDS**: not the cause (transient
   units without sockets crashed identically).
 
 The unit-vs-foreground "context dependence" that seemed real early was an
 ILLUSION: the working foreground runs happened BEFORE the latch flipped;
-once time-matched, foreground crashed too. Beware this trap — always run a
+once time-matched, foreground crashed too. Beware this trap – always run a
 time-matched control.
 
 ────────────────────────────────────────────────────────────────────────
@@ -287,7 +287,7 @@ time-matched control.
 Give these to the fresh session; they're how the truth got extracted:
 
 **Reading Samsung's boot log** (ONLINE is not in dmesg):
-`grep -c ONLINE /proc/snd_debug_proc/sdp_boot_log` — 0 = never came up, 1 =
+`grep -c ONLINE /proc/snd_debug_proc/sdp_boot_log` – 0 = never came up, 1 =
 came up once and stable, >1 = came up then TORE DOWN (a separate runtime bug).
 
 **Container logcat, correctly** (the host/container split matters):
@@ -313,14 +313,14 @@ no gdb needed.)
 SAME time window. State (the latch) changes between attempts and creates
 phantom "it works foreground but not as a service" conclusions.
 
-**Capture rc correctly:** `cmd; rc=$?` BEFORE any pipe — piping to tee/tail
-captures the pipeline's rc, not the command's. (This bit us twice — a false
+**Capture rc correctly:** `cmd; rc=$?` BEFORE any pipe – piping to tee/tail
+captures the pipeline's rc, not the command's. (This bit us twice – a false
 "survived" reading.)
 
 **evemu-record / libinput list-devices** for input-side questions (the jack
-device, etc.) — more reliable than hand-rolled evdev readers.
+device, etc.) – more reliable than hand-rolled evdev readers.
 
-**DANGER:** never `rmmod machine_dlkm` — it panics the box (no ramoops backend
+**DANGER:** never `rmmod machine_dlkm` – it panics the box (no ramoops backend
 on this config = unrecoverable). And pstore/ramoops is absent
 (dump_sink=0x0), so kernel panics leave no post-mortem.
 
@@ -331,10 +331,10 @@ Everything structural transfers. These are the DATA points that WILL differ or
 must be confirmed on gts9wifi (SM-X710) vs gts9uwifi (SM-X910):
 
 1. **Codename / platform:** 11" = gts9wifi, kalama (same platform). Card name
-   string was `kalama-mtp-snd-card` on Ultra — verify via
+   string was `kalama-mtp-snd-card` on Ultra – verify via
    `cat /proc/asound/cards` (machine driver kalama.c is shared, so likely same).
 
-2. **Speaker amplifiers (WILL differ — most likely delta):** the Ultra's DT
+2. **Speaker amplifiers (WILL differ – most likely delta):** the Ultra's DT
    ext-dev-names had **4× cs35l45** (i2c 18-0030..0033) + btfmslim_slave. The
    11" is a smaller device and very likely has FEWER amps (perhaps 2×) or a
    different amp layout. Check the machine node's `ext-dev-names` and the
@@ -351,7 +351,7 @@ must be confirmed on gts9wifi (SM-X710) vs gts9uwifi (SM-X910):
    confirm `ls /android/vendor_dlkm/lib/modules/ | grep -E "lpass|macro|machine"`.
 
 5. **modules.load duplication:** CHECK whether the 11"'s list is duplicated.
-   Ours was a 4× artifact of OUR extract/build pipeline — Azkali's original may
+   Ours was a 4× artifact of OUR extract/build pipeline – Azkali's original may
    be clean. `awk '{c[$0]++} END{for(k in c) if(c[k]>1) print c[k],k}'
    /android/vendor_dlkm/lib/modules/modules.load`.
 
@@ -381,7 +381,7 @@ arch/arm64/boot/dts/samsung/galaxytab/gts9wifi/) rather than probe the device.
 - **Runtime teardown ghost:** on the Ultra, one early boot had the card come
   ONLINE then tear down; never reproduced (ONLINE count stayed 1 across days).
   `btfmslim_slave` (a card component tied to BT/FM slimbus) was the untested
-  suspect — if the 11" shows card death on BT toggle, that's the lead.
+  suspect – if the 11" shows card death on BT toggle, that's the lead.
 
 - **Clock jump:** the container time service can jump the wall clock to ~1970
   mid-boot (corrected later by NTP). Harmless to audio (all waits are state
@@ -391,7 +391,7 @@ arch/arm64/boot/dts/samsung/galaxytab/gts9wifi/) rather than probe the device.
 
 - **journald kmsg:** Halium ships `ReadKMsg=no` (an lxc-android-config
   drop-in). If you need kernel logs in the journal for debugging, override with
-  `ReadKMsg=yes` — but it's debug-only (journal volume cost) and accelerates
+  `ReadKMsg=yes` – but it's debug-only (journal volume cost) and accelerates
   rotation of early-boot entries.
 
 ────────────────────────────────────────────────────────────────────────
@@ -399,10 +399,10 @@ arch/arm64/boot/dts/samsung/galaxytab/gts9wifi/) rather than probe the device.
 
 1. Does a known-good Azkali gts9wifi image have sound? If yes → compare, don't
    re-derive. If no/unknown → continue.
-2. `cat /proc/asound/cards` — no card? → bug #1 (macros/storm). Check
+2. `cat /proc/asound/cards` – no card? → bug #1 (macros/storm). Check
    `lsmod | grep lpass_cdc` and `devices_deferred`. Try
    `insmod .../lpass_cdc_va_macro_dlkm.ko` and watch for the cascade.
-3. Card present but no sound? `getprop vendor.audio.use.primary.default` —
+3. Card present but no sound? `getprop vendor.audio.use.primary.default` –
    `true`? → bug #2. Clear it, restart vendor.audio-hal (bug #5a),
    `chmod 0666` the state nodes (bug #5b), retry.
 4. PA segfaults at droid-card? → bug #3 is the messenger; find the upstream

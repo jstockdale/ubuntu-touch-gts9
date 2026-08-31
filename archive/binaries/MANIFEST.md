@@ -1,4 +1,4 @@
-# archive/binaries — manifest
+# archive/binaries – manifest
 
 These files exist on local disk but are **excluded from git**
 (Samsung/Qualcomm proprietary binaries). Verify with `sha256sum -c` against
@@ -16,4 +16,4 @@ the hashes below after any copy.
 | File | SHA-256 | Source |
 |---|---|---|
 | `SM-X810_13_Opensource_dts.zip` | `7607e5bc622b289527dbf1f8edeaca43e9fa1e67e309572375b977e922e3977c` | opensource.samsung.com (gts9pwifi dts overlay, X810XXU1AWG1) |
-| `SM-X818U_13_Opensource_X818USQU1AWH8_….zip` | `79dd507a3501b9410d0f989d3c986f4d8ecff42159daf9936a0815bf27ddb246` | opensource.samsung.com (AWH8 delta; the full **base** `SM-X818U_13_Opensource.zip` was too large to retain — re-download) |
+| `SM-X818U_13_Opensource_X818USQU1AWH8_….zip` | `79dd507a3501b9410d0f989d3c986f4d8ecff42159daf9936a0815bf27ddb246` | opensource.samsung.com (AWH8 delta; the full **base** `SM-X818U_13_Opensource.zip` was too large to retain – re-download) |

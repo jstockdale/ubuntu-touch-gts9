@@ -1,4 +1,4 @@
-# gts9wifi — next-device-access checklist
+# gts9wifi – next-device-access checklist
 
 Verification items that require the 11" in hand (queued 2026-08-30 by the
 parity audit; work through top-to-bottom, tick and date).
@@ -24,7 +24,7 @@ parity audit; work through top-to-bottom, tick and date).
    executed: `dpkg -l | grep -E 'libqt5(gui|quick)5'` shows ONLY `-gles`
    rows; `qtubuntu-android` installed; maliit running; check whether
    krita/xinput still linger (`apt remove --purge krita krita-data` if so).
-4. **Apt pin.** `cat /etc/apt/preferences.d/no-desktop-qt5` — treat as
+4. **Apt pin.** `cat /etc/apt/preferences.d/no-desktop-qt5` – treat as
    absent until seen; install via the post-flash script if missing.
 5. **modules.load measurement.** Re-confirm the 4x duplication figure and
    capture it for the upstream dedupe ask:
@@ -35,9 +35,9 @@ parity audit; work through top-to-bottom, tick and date).
    the kit off-device.
 7. **BT HAL crash-loop.** After a full power-off cold boot, capture:
    `lxc-attach -n android --clear-env -- logcat -d | grep -i bluetooth`
-   plus `systemctl status bluebinder hciuart 2>/dev/null` — the ~62 s
+   plus `systemctl status bluebinder hciuart 2>/dev/null` – the ~62 s
    SIGKILL cycle's outcome was never recorded.
-8. **aud_dev ownership oddity.** `ls -ln /sys/kernel/aud_dev/state` — the
+8. **aud_dev ownership oddity.** `ls -ln /sys/kernel/aud_dev/state` – the
    parked uid-1013 root-EACCES observation; the hardening service now
    chmods it, verify it sticks.
 9. **Touchpad daemon (folio users).** Install + empirically validate the

@@ -66,7 +66,7 @@ PIT (unit = 4096 B/block, calibrated against extracted boot.img):
    TWRP gts9p boot test + FULL backup incl. EFS before any flash.
 4. Then: assemble `gts9p-imports`, write `x810-extract.sh` +
    `build-gts9pwifi.sh` (SUPER=11714691072, panel sed, fts1ba90a fatal check,
-   wez01 warn check unchanged). [SUPERSEDED 2026-08-30: wez01 is now FATAL — see the addendum below.]
+   wez01 warn check unchanged). [SUPERSEDED 2026-08-30: wez01 is now FATAL – see the addendum below.]
 
 ## 2026-08-27 addendum – assembly complete
 
@@ -91,7 +91,7 @@ full drop (Kernel.tar.gz 753 MB + Platform.tar.gz). Input set complete.
 - AWH8 panel.c/h confirmed different from base → delta applied in the bundle.
 - Artifacts: `gts9p-imports.tar.gz`
   (sha256 bce7f412…, [SUPERSEDED 2026-08-30: use `devices/gts9pwifi/imports/` at repo
-  HEAD — that tarball predates the wacom drivers/input wiring]),
+  HEAD – that tarball predates the wacom drivers/input wiring]),
   `build-gts9pwifi.sh`, `x810-extract.sh`.
 
 Remaining runway: fork samsung-gts9p skeleton (gts9u→gts9p rename checklist in

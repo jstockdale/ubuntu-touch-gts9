@@ -17,7 +17,7 @@ directly verified.
 > the knowledge-transfer doc) say the Ultra DT enables **va/rx/tx** with
 > wsa/wsa2 disabled (`num-macros=3`). The observations below (which .ko files
 > were absent on the failed boot) stand as recorded; treat the *interpretation*
-> of which macros gate the card per PORT-STATE. Operationally moot — the
+> of which macros gate the card per PORT-STATE. Operationally moot – the
 > bringup walks the whole modules.load either way.
 
 ---
