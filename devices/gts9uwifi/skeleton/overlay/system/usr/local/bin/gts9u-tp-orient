@@ -1,0 +1,19 @@
+#!/bin/sh
+# gts9u-tp-orient - send a command to the gts9u-tp-rotate control FIFO
+FIFO=${GTS9U_TP_FIFO:-/run/gts9u-tp-rotate.ctl}
+
+case "$1" in
+  0|90|180|270|status|quit) ;;
+  *) echo "usage: gts9u-tp-orient 0|90|180|270|status|quit" >&2; exit 2 ;;
+esac
+
+[ -p "$FIFO" ] || {
+  echo "FATAL: $FIFO is not a FIFO - is gts9u-tp-rotate running?" >&2
+  echo "  hint: sudo systemctl start gts9u-tp-rotate   (or run it in the foreground)" >&2
+  exit 1
+}
+
+printf '%s\n' "$1" > "$FIFO" || {
+  echo "FATAL: write to $FIFO failed" >&2
+  exit 1
+}

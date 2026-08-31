@@ -198,7 +198,11 @@ ACTION=="add", KERNEL=="msm_pcm_lp_dec", OWNER="system", GROUP="system", MODE="0
 ACTION=="add", KERNEL=="msm_preproc_ctl", OWNER="system", GROUP="system", MODE="0660"
 ACTION=="add", KERNEL=="msm_rtac", OWNER="system", GROUP="system", MODE="0660"
 ACTION=="add", KERNEL=="msm_voicememo", OWNER="system", GROUP="system", MODE="0660"
-ACTION=="add", KERNEL=="aud_pasthru_adsp", OWNER="system", GROUP="system", MODE="0660"
+# ueventd.rc says "system audio" for this node; the udev translation had
+# collapsed it to GROUP="system" (fix ran live as 71-gts9u-audiofix.rules on
+# device). The surrounding legacy msm_* nodes do not exist on kalama, so only
+# this one is corrected; re-sweep if any audio node surfaces wrong on-device.
+ACTION=="add", KERNEL=="aud_pasthru_adsp", OWNER="system", GROUP="audio", MODE="0660"
 ACTION=="add", KERNEL=="msm_system_ion_cma", OWNER="system", GROUP="system", MODE="0660"
 ACTION=="add", KERNEL=="msm_system_ion", OWNER="system", GROUP="system", MODE="0660"
 ACTION=="add", KERNEL=="ttyHSL1", OWNER="system", GROUP="system", MODE="0660"

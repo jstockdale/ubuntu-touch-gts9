@@ -1,5 +1,6 @@
 #!/bin/sh
-# gts9u audio bring-up v3.
+# gts9u audio bring-up v4 (v3 + the finit stage-2 curated loader; header
+# previously mislabeled v3).
 # 1) The vendor modprobe storm drops modules nondeterministically - walk
 #    modules.load ourselves (dedup, blocklist-honored) and fill every hole.
 # 2) Wait for the sound card to come ONLINE.

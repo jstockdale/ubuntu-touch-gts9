@@ -1,7 +1,7 @@
 # Boot-time default orientation for gts9u-tp-rotate.
 # 270 is the empirically-proven landscape-correct label on gts9uwifi
-# (validated on silicon 2026-08-24/26). 0 = pad native frame (portrait).
-# On a new unit, re-run the validation pass from install.sh if unsure.
+# (validated on silicon 2026-08-24/26; the pad is portrait-native and the
+# shell's primary orientation is landscape). 0 = pad native frame.
 # Once the DTS touchpad,invert bake makes the driver landscape-native,
 # flip this back to 0.
 GTS9U_TP_DEFAULT=270

@@ -1,0 +1,12 @@
+# Refuse desktop-GL Qt5 on the UT rootfs. Installing a desktop-GL app
+# (krita, gimp, ...) makes apt REMOVE the -gles Qt stack and
+# qtubuntu-android; every Qt Wayland client then gets zero EGLConfigs and
+# lomiri crash-loops on next login (gts9wifi incident, 2026-08-27/30).
+# Desktop apps belong in Libertine or Waydroid.
+Package: libqt5gui5
+Pin: release *
+Pin-Priority: -1
+
+Package: libqt5quick5
+Pin: release *
+Pin-Priority: -1

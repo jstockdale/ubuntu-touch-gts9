@@ -2,6 +2,9 @@
 Description=Virtual headphone jack switch for droid-extevdev (gts9u)
 
 [Service]
+# Belt: uinput is built-in on current images, but if it ever ships modular
+# the daemon would fail and only the bringup's warn-path would save audio.
+ExecStartPre=-/sbin/modprobe uinput
 ExecStart=/usr/bin/python3 /usr/local/lib/gts9u-virtual-h2w.py
 Restart=on-failure
 
