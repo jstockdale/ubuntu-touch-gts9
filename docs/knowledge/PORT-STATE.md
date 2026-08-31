@@ -373,7 +373,10 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 - **Bootloader bit fuse** = digit after XXU/XXS in the build string, visible in Download Mode
   (`RP SWREV`). **Rev 5 = last unlockable** (Android 15 / One UI 7, e.g. X710XXS5CYG1);
   **rev 6 = terminal** (One UI 8.5, e.g. X710XXS6DZB6). One UI 8 removed unlocking globally. `[install-boot §1]`
-- **Per-unit firmware:** gts9wifi pins **X710XXU5CYD9** (2025-04, A13 vendor base); gts9uwifi
+- **Per-unit firmware:** gts9wifi pins **X710XXU5CYD9** (2025-04 patch; the "A13"
+  in the shipped fingerprint `:13/TP1A.../X710XXU5CYD9` is port-composed — the
+  CYD9 firmware release itself is the April-2025/A15-era quarterly, one XXS
+  security respin behind our archived CYG1 packages); gts9uwifi
   vendor **X910XXS5CYG1** (A15, rev 5, patch 2025-07-01); gts9pwifi target **X810XXU1AWHA** (last
   A13/rev-1). Kernel generation 5.15.153 / KMI 30958166 across all. `[porting-orig.p1,p2][tabS9plus]`
 - **Sourcing rules:** WiFi SKUs only (X710/X810/X910); verify bit fuse in Download Mode before setup;

@@ -43,9 +43,27 @@ hardware appears.
 
 | | Build | Android / patch | Bootloader binary | Status | Package |
 |---|---|---|---|---|---|
-| **Tab S9 Ultra** (SM-X910, gts9uwifi) | **X910XXS5CYG1** | Android 15 / 2025-07-01 | rev 5 | **validated on silicon** (the lead port) | full factory zip for X910XXS5CYG1 (e.g. from samfw.com, SM-X910; ~15 GB) |
+| **Tab S9 Ultra** (SM-X910, gts9uwifi) | **X910XXS5CYG1** | Android 15 / 2025-07-01 | rev 5 | **validated on silicon** (the lead port) | `XAR-X910XXS5CYG1-20250728211620.zip` — 15,273,971,024 bytes (sha256 below) |
 | **Tab S9+** (SM-X810, gts9pwifi) | **X810XXU1AWHA** | Android 13 / last rev-1 build | rev 1 | port kit assembled against it (port unexecuted) | `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` — exactly **9,225,074,787 bytes**; `unzip -T` must pass |
-| **Tab S9 11"** (SM-X710, gts9wifi) | X710XXU5CYD9 | Android 13 / 2025-04-01 | rev 5 | daily-driven (Azkali's upstream build pins it) | n/a — Azkali's port ships its own firmware donor tarball |
+| **Tab S9 11"** (SM-X710, gts9wifi) | X710XXU5CYD9 | Android 15 era / 2025-04-01 patch¹ | rev 5 | daily-driven (Azkali's upstream build pins it) | n/a — Azkali's port ships its own firmware donor tarball; our archived rescue/reference package is **X710XXS5CYG1** (see hashes below) |
+
+¹ The shipped gts9wifi port's vendor fingerprint reads
+`gts9wifi:13/TP1A.220624.014/X710XXU5CYD9` — an Android-13 platform ID
+glued to the CYD9 build string. That identity is port-composed (halium-13
+ports assemble the fingerprint); the CYD9 *firmware release* itself is the
+April 2025 / Android-15-era quarterly.
+
+### CYD9 vs CYG1 — sequencing of the two rev-5 vintages in play
+
+`XXU5CYD9` (Azkali's pin) is the **April 2025 full/feature quarterly**
+(XXU train, patch 2025-04-01); `XXS5CYG1` (our archived packages, and the
+Ultra port's donor) is its **security-only successor one quarter later**
+(XXS train, July 2025, patch 2025-07-01). Same Android generation (C =
+third OS = Android 15 era), same bootloader binary 5, identical kernel
+generation (5.15.153 / KMI 30958166 — the stock kernel strings differ
+only by model/build tag). Flashing CYG1 stock over a CYD9-based unit for
+rescue is lateral and fuse-neutral, and the CYD9-donor / CYG1-donor
+interop is exactly what the working family ports already demonstrate.
 
 ## Recommended per bootloader series
 
@@ -87,9 +105,31 @@ Verification the extractors enforce for you:
   byte-exactly **11,714,691,072** (GTS9PWIFI_EUR_OPEN.pit), so a wrong or
   truncated package cannot silently poison the geometry.
 
-TODO: pin the X910 package's exact distribution filename + sha256 on the
-next local download (the original extraction was done by ranged streaming;
-the build string above is the authoritative identity).
+## Reference package archive — SHA256 (hashed 2026-08-31)
+
+The exact archives this project builds against, held in the project's
+private storage and hashed by streaming the full files end to end (each
+verified to begin with a genuine Samsung factory tar member for the
+expected build — not an error page). Verify any copy you obtain against
+these before extracting:
+
+| Archive | Bytes | SHA256 |
+|---|---|---|
+| `SM-X810-XAR-X810XXU1AWHA_fac.zip` | 9,225,074,787 | `9df2a2cd26fe080e99fb6946e95bdf1415708087008dd27ae6b42194b9553c3e` |
+| `XAR-X710XXS5CYG1-20250728211550.zip` | 15,272,300,480 | `2714fc70cd3ae61e83fc79466a1379103a5e4524791ad00cb8f7a08036f209b1` |
+| `XAR-X910XXS5CYG1-20250728211620.zip` | 15,273,971,024 | `a14779c80b6d93b0092c1a7f29e8a4cd5f25954001b6b3b6c4312e2ea9117a7f` |
+
+MD5 (for tooling that wants it): X810 AWHA `6d6171b7dd5a92c38b413f2bdf677d5c`;
+X710 CYG1 `be7dd8f3c319e118cafb619f9e1db0cd`;
+X910 CYG1 `ab94491d2a8109af2b52b2098ced25bb`.
+
+All three are US (XAR) region packages. The two CYG1 archives are the
+rev-5 rescue/reference set (pulled 2025-07-28); the AWHA archive is the
+S9+ port's donor. Samsung firmware is not redistributed from this repo —
+source your own copy (samfw.com or equivalent) and hash-verify it. The
+X710/X910 **1-series (AWHA)** packages recommended above for the
+new-in-box units are not yet in the archive; hash-pin them here when
+downloaded.
 
 ## Kernel source drops (OSRC) the imports were assembled from
 
