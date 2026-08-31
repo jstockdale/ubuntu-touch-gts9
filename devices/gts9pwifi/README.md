@@ -25,7 +25,8 @@ and never accepts an OTA.** One accepted update is a one-way door.
   drop-in, and a case-insensitive Ultra-token check over the forked
   flasher.
 - `x810-extract.sh` — streams the parts out of the
-  `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` factory image; hard-fails
+  `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` factory image (the exact
+  vintage matters, see [FIRMWARE.md](../../FIRMWARE.md)); hard-fails
   unless raw super is byte-exactly 11,714,691,072.
 - `imports/` — gts9p OSRC import bundle (GTS9P panel + AWH8 delta, DTS
   r00/r02/r04, merged display Kbuild). Provenance in its `MANIFEST.md`.

@@ -18,6 +18,10 @@ Snapshot assembled 2026-08-30 from the July–August 2026 porting campaign
 | SUPER (PIT) | 11,643,387,904 | 11,714,691,072 | 11,744,051,200 |
 | Firmware base | X710XXU5CYD9 (A13) | X810XXU1AWHA (A13, rev-1) | X910XXS5CYG1 (A15, rev 5) |
 
+**Build against the exact firmware vintages in [FIRMWARE.md](FIRMWARE.md)**
+— the flashable images stage vendor partitions carved from those specific
+packages, and all on-silicon validation happened against them.
+
 All three are SM8550 "kalama": **one halium kernel binary serves the family**
 (Azkali's `kernel-samsung-gts9wifi` @ `android13-5.15-halium`). Only the DTB
 (selected from the untouched stock `dtbo` partition), panel data, and vendor

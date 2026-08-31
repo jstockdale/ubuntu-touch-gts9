@@ -14,7 +14,7 @@ inside the imports bundle (per-file provenance).
 |---|---|---|
 | gts9p imports: `devices/gts9pwifi/imports/` **from this repo, current HEAD** | ubuntu-touch-gts9.git | do NOT use any archived `gts9p-imports.tar.gz` (sha256 bce7f412... predates the 2026-08-30 wacom `drivers/input/{Kconfig,Makefile}` wiring addition — a tarball with that hash makes the build's wacom gates die FATAL) |
 | `build-gts9pwifi.sh`, `x810-extract.sh` | this session | `bash -n` passes; `chmod +x` both |
-| `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` | your s10.ooo link | exactly 9,225,074,787 bytes; `unzip -T` OK. Token links expire – if it 403s, regenerate from the samfw SM-X810 / XAR / AWHA page |
+| `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` (exact vintage — see repo FIRMWARE.md) | your s10.ooo link | exactly 9,225,074,787 bytes; `unzip -T` OK. Token links expire – if it 403s, regenerate from the samfw SM-X810 / XAR / AWHA page |
 | OSRC set: `SM-X818U_13_Opensource.zip` (base) + `SM-X810_13_Opensource_dts.zip` + AWHA-named delta zip | already downloaded | keep all three together |
 | gts9u skeleton: `devices/gts9uwifi/skeleton/` **from this repo, current HEAD** | ubuntu-touch-gts9.git | do NOT use any `gts9uwifi-skeleton*.tar.gz` — the pre-audio original survives under exactly that name (`archive/superseded/gts9uwifi-skeleton-orig.tar.gz`) and is a foot-gun; the repo dir is the canonical audio-era skeleton **plus the 2026-08-30 parity fixes** (WiFi persistence, tp-rotate, sed-safe flasher, merged swap script, LP budget) |
 | TWRP gts9p build + your vbmeta-disabled file | same XDA thread as the Ultra | treat as unverified until Phase 3.5 |

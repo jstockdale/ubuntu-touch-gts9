@@ -43,7 +43,8 @@ SKEL=$PWD/skeleton IMPORTS=$PWD/imports SRC_PARTS=~/out-x910/parts \
 ```
 
 Firmware donor parts come from `tools/extract/x910-extract.sh` against the
-X910XXS5CYG1 factory zip. If a stale pre-audio `samsung-gts9u/` sits in the
+**X910XXS5CYG1** factory zip — the exact vintage matters, see
+[FIRMWARE.md](../../FIRMWARE.md). If a stale pre-audio `samsung-gts9u/` sits in the
 workdir the script fails fast — remove it and rerun.
 
 ## Flash
