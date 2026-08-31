@@ -77,7 +77,7 @@ disk (gts9p has no skeleton — VERIFIED `devices/gts9pwifi/` has no `skeleton/`
 | **Pen calibration** `74-gts9-wacom.rules` | in Azkali image? (rule header says "shared by gts9wifi/gts9uwifi") | PLAN (family-named, untouched by rename — correct) | **SKEL** VERIFIED |
 | **Touch calibration matrix** `0 1 0 -1 0 1` | Azkali-native | PLAN — matrix is **family policy** (same panel mount, audit B), expected correct; confirm at bring-up rung 2 | **SKEL** VERIFIED `71-gts9uwifi-touch-calibration.rules` |
 | **Touchpad rotation daemon** (gts9u-tp-rotate v0.1, name-generic) | **MISSING — never installed** though it transfers unchanged (`sec_touchpad_pogo` identical) | PLAN — runbook rung 6 "carries over" is **misleading**: it is a manual post-flash install | **INST only** — VERIFIED at `$R/fixes/input-touchpad/gts9u-tp-rotate/` but NOT in skeleton; **and the shipped default is wrong**: `gts9u-tp-rotate.default:6` = `GTS9U_TP_DEFAULT=0`, the silicon-proven value 270 lives only on-device |
-| **DTS `touchpad,invert`** | n/a | stock values VERIFIED (`r04.dts:10424`) | **MISSING from repo** — imports r00/r03 VERIFIED stock `<0x00 0x01 0x01>`; the sed'd `<0x01 0x00 0x00>` exists only in the pika working tree → **repo and pika build different DTBOs** (deliberately deferred per peripherals notes, but PORT-STATE §6 #6 still lists it open — reconcile either way) |
+| **DTS `touchpad,invert`** | n/a | stock values VERIFIED (`r04.dts:10424`) | **MISSING from repo** — imports r00/r03 VERIFIED stock `<0x00 0x01 0x01>`; the sed'd `<0x01 0x00 0x00>` exists only in the build-box working tree → **repo and the build box build different DTBOs** (deliberately deferred per peripherals notes, but PORT-STATE §6 #6 still lists it open — reconcile either way) |
 | **Goodix berlin touch import** | fix for Goodix-rev 11" units sits **finished but stranded** in gts9u-imports — no delivery path, no ledger item (John's unit is STM-rev, unaffected) | N/A — S9+ is STM (goodix DT node is inert cruft, hw-findings); `stm_ts_fts1b90a.ko` missing = build-FATAL | **SKEL/imports** VERIFIED full source + Kconfig/Makefile wiring + config append, build-gated |
 | **Wacom wez01 kernel wiring** (Kconfig/Makefile 2-file merge) | in CI build? (unverified — wez01.ko loads clean, REPORTED) | **MISSING from bundle** — gts9p-imports has NO drivers/input files; build checks (`:151,153`) were already true when the symbol "sat inert"; missing wez01.ko is **warn-only** (`:216`) → first S9+ build could silently ship no pen module | **imports** VERIFIED both merged files; ⬆donor for gts9p |
 
@@ -201,7 +201,7 @@ disk (gts9p has no skeleton — VERIFIED `devices/gts9pwifi/` has no `skeleton/`
 2. Add `cfg80211` + `qca_cld3_kiwi_v2` to `$SK/overlay/system/etc/modules-load.d/gts9uwifi.conf`.
 3. Fold the three device-live fixes into the skeleton: touchpad rotation (daemon in
    overlay, or land the DTS `touchpad,invert` after reading the stm32_pogo parser —
-   reconcile the pika-tree drift either way), LimitNOFILE=65536 greeter drop-in, apt pin.
+   reconcile the build-box-tree drift either way), LimitNOFILE=65536 greeter drop-in, apt pin.
 4. Fix `70-gts9uwifi.rules` `aud_pasthru_adsp` to `GROUP="audio"` and sweep the file for
    other ueventd group mistranslations.
 5. Set `gts9u-tp-rotate.default` to 270 with a provenance comment.

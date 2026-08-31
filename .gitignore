@@ -19,3 +19,9 @@ ubuntu-touch-gts9*wifi-*.zip
 # exempt it from the *.img build-artifact rule wholesale.
 !devices/*/skeleton/**/*.img
 !devices/*/skeleton/vbmeta.img
+
+# Private working material — never publish (lives in the local capture
+# workspace only; see archive/README.md)
+archive/transcripts/
+archive/logs/
+archive/notes/*.notes.md

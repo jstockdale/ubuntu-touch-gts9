@@ -420,7 +420,7 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 **Highest leverage (upstream, unsent):**
 1. Send Azkali/UBports: bump `pulseaudio-modules-droid-30` to ≥14.2.110 (or cherry-pick dfda983);
    file on the packaging tracker (scope: all jackless halium-13 24.04 devices on -30). Aug 11
-   deliverables (field report, patch, tarball) believed on host "pika". `[audio-cluster §4]`
+   deliverables (field report, patch, tarball) believed on the build box. `[audio-cluster §4]`
 2. Submit the Halium shim patch (`0001-audio_hw-...`) to `android_vendor_halium_hardware`. `[audio-config.p2]`
 3. Draft the `lpass_cdc_unregister_macro` kernel accounting patch. `[audio-config.p1]`
 

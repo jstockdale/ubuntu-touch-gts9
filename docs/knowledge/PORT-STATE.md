@@ -432,7 +432,7 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 **Highest leverage (upstream, unsent):**
 1. Send Azkali/UBports: bump `pulseaudio-modules-droid-30` to ≥14.2.110 (or cherry-pick dfda983);
    file on the packaging tracker (scope: all jackless halium-13 24.04 devices on -30). Aug 11
-   deliverables (field report, patch, tarball) believed on host "pika". `[audio-cluster §4]`
+   deliverables (field report, patch, tarball) believed on the build box. `[audio-cluster §4]`
 2. Submit the Halium shim patch (`0001-audio_hw-...`) to `android_vendor_halium_hardware`. `[audio-config.p2]`
 3. Draft the `lpass_cdc_unregister_macro` kernel accounting patch. `[audio-config.p1]`
 
@@ -443,7 +443,7 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 6. Touchpad: daemon now BAKED in the skeleton (default 270; Tier 1). Remaining:
    the `touchpad,invert <0x01 0x00 0x00>` DTS bake — deliberately deferred until
    the stm32_pogo DT parser is read (one-bit mirror risk); reconcile the sed'd
-   copy in the pika working tree either way; after the bake, flip daemon
+   copy in the build-box working tree either way; after the bake, flip daemon
    default 270→0. `[peripherals §1]`
 7. USB-C host mode dead; cameras/UDFPS untested; touch enumeration race across boots. `[porting-orig.p4,p5]`
 8. Boot-time PD negotiation lands plain USB/rp(2) (pdic loads at t≈12s) — one replug renegotiates. `[audio-config.p3]`

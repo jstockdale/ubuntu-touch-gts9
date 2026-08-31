@@ -3,17 +3,18 @@
 Nothing in here is needed to build. It is the paper trail behind everything
 in the live tree.
 
-- `transcripts/` — lossless captures of the 28 claude.ai working
-  conversations (Jul–Aug 2026), named `<date>_<slug>_<conv-uuid8>.md`. Full
-  message text plus every pasted log and text attachment (bodies of
-  duplicate attachments deduplicated in place). This is the canonical source
-  the whole repo was reconstructed from on 2026-08-30.
-- `notes/` — the reconstruction working notes: per-thread mining notes,
-  RECON analyses (build-script lineage, skeleton diffs, fixes catalog), and
-  the two synthesis documents. `SYNTHESIS-port-state.md` here is the source
-  of `docs/knowledge/PORT-STATE.md`.
-- `logs/<thread>/` — raw diagnostic uploads (dmesg, journal, straces,
-  probe outputs) that back specific findings in the docs.
+- **Kept out of this repository (private):** the lossless transcripts of
+  the 28 source working conversations, the raw diagnostic log uploads
+  (dmesg/journal/straces — device logs can embed identifiers), and the
+  per-thread conversation-summary notes. They live only in the local
+  capture workspace (`.../claude-ubuntu-touch/_capture/`). Citations in
+  the retained docs of the form `[thread.pN]` / `transcripts/<file>:line`
+  refer to that private capture.
+- `notes/` — the retained engineering analyses: RECON (build-script
+  lineage, skeleton diffs, fixes catalog), the two synthesis documents
+  (`SYNTHESIS-port-state.md` is the source of
+  `docs/knowledge/PORT-STATE.md`), and `parity/` (the 2026-08-30
+  three-device parity audit).
 - `session8-audio/` — the session-8 audio bisection one-off scripts. Their
   conclusions shipped; the scripts are methodology/evidence.
 - `pen-investigation/` — the S-Pen/Krita investigation ladder (pen-*.sh,
