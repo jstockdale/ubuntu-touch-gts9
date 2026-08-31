@@ -38,7 +38,8 @@ rev ≤ 5 tablet permanently ends its usefulness for porting. Therefore:
 - **Never accept an OTA on a unit you intend to port.** Keep it offline
   through setup; disable auto-update.
 - **Check the rev in Download Mode** (`RP SWREV` line) before buying, before
-  unlocking, before flashing. The splash-screen "OEM LOCK" line misreports.
+  unlocking, before flashing — the boot-splash "OEM LOCK" line is usually
+  right but can show stale state; Download Mode is authoritative.
 - Use firmware matching your unit's rev — rules and per-rev recommendations
   in [FIRMWARE.md](FIRMWARE.md).
 
