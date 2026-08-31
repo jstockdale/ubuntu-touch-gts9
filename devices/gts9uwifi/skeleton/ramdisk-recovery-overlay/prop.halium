@@ -1,0 +1,5 @@
+# landscape-native panel, portrait-mounted touch controller
+ro.minui.default_rotation=ROTATION_NONE
+ro.minui.default_touch_rotation=ROTATION_RIGHT
+# CONFIG_CMDLINE_FORCE drops androidboot.*, so tell recovery about super ourselves
+ro.boot.dynamic_partitions=true

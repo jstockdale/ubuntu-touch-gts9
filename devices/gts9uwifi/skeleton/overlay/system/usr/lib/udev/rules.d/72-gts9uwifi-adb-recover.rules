@@ -1,0 +1,6 @@
+# the dwc3 otg state machine tears the composite driver off the udc for any
+# role swap or core reset (usb_gadget_remove_driver, no USB_UDC_DRIVER in the
+# event), which closes ep0 out from under adbd; only act once the gadget unit
+# has reached steady state, so this does not chase the gadget script's own
+# unbind-then-rebuild at start
+SUBSYSTEM=="udc", ACTION=="change", ENV{USB_UDC_DRIVER}=="", RUN+="/bin/sh -c 'test `systemctl is-active gts9-adb.service` = active && exec systemctl --no-block restart gts9-adb.service'"

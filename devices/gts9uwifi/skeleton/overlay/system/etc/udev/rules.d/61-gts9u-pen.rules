@@ -1,0 +1,10 @@
+# gts9u: classify the S-Pen digitizer as a touchscreen. The UT 24.04 Lomiri
+# compositor (UBports Mir 1.x fork) has no zwp_tablet_v2 - native tablet
+# events have no consumer - and apps ride the mirclient QPA besides. Pen-as-
+# touch is the supported path until the Mir 2 / Wayland transition; revisit
+# then (Qt5WaylandClient tablet-v2 + QTabletEvent verified present on-image).
+# Note: ID_INPUT_TABLET may remain set by input_id; it is inert because the
+# libinput quirk strips the pen button codes, so the tablet path cannot
+# claim the device and the touchscreen path wins. Verified working 2026-08-10.
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="sec_e-pen", \
+  ENV{ID_INPUT}="1", ENV{ID_INPUT_TABLET}="", ENV{ID_INPUT_TOUCHSCREEN}="1"

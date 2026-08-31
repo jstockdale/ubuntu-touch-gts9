@@ -1,0 +1,16 @@
+[Unit]
+Description=Static ADB USB gadget (gts9uwifi)
+After=sys-kernel-config.mount lxc-android-config.service
+Wants=lxc-android-config.service
+Conflicts=usb-moded.service
+OnFailure=gts9-adb-recover.service
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/gts9-adb-gadget
+
+[Install]
+WantedBy=multi-user.target

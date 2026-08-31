@@ -1,0 +1,9 @@
+[Unit]
+Description=Virtual headphone jack switch for droid-extevdev (gts9u)
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/lib/gts9u-virtual-h2w.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

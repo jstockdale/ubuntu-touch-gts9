@@ -1,0 +1,48 @@
+From c408ccd398e9efd30a3a7b8724dda7394704a596 Mon Sep 17 00:00:00 2001
+From: John Stockdale <john@offbyone.example>
+Date: Sat, 8 Aug 2026 20:26:57 +0000
+Subject: [PATCH] audio_hw: fail adev_open when the devices factory cannot open
+ a device
+
+adev_open() logs openDevice() failures but then populates the ops
+table and returns 0 with adev->deviceIface left null. The caller
+(e.g. pulseaudio-modules-droid) sees a successful open, logs
+"Opened hw audio device", and the first forwarded call - typically
+init_check() - dereferences the null sp<DeviceHalInterface> and
+crashes the client:
+
+  signal=11 SEGV_MAPERR fault_addr=0x0
+  PC = audio.hidl_compat.default.so+0x2280
+  (adev_init_check trampoline: ldr x8,[x0] with
+   x0 = adev->deviceIface = null; LR = PC-8, the return from ALOGV)
+
+Observed on Ubuntu Touch 24.04 / halium-13.0 (Samsung Tab S9 Ultra):
+any condition that makes the vendor HAL refuse the open (here
+Samsung's vendor.audio.use.primary.default fallback latch returning
+ENODEV through the factory) became a PulseAudio SIGSEGV crash loop
+instead of a clean module-load failure, masking the real error.
+
+Propagate the error and free the wrapper so clients get a failed
+open and fall back gracefully. Same code is present on halium-12.0
+through halium-16.0 and master; the patch applies to all.
+---
+ audio/audio_hw.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/audio/audio_hw.cpp b/audio/audio_hw.cpp
+index 341119d..86ad05d 100644
+--- a/audio/audio_hw.cpp
++++ b/audio/audio_hw.cpp
+@@ -676,6 +676,9 @@ static int adev_open(const hw_module_t* module, const char* name,
+     int rc = devicesFactoryHal->openDevice(AUDIO_HARDWARE_MODULE_ID_PRIMARY, &adev->deviceIface);
+     if (rc) {
+         ALOGE("devicesFactoryHal->openDevice() error %d loading module %s", rc, name);
++        delete adev;
++        *device = nullptr;
++        return rc < 0 ? rc : -ENODEV;
+     }
+ 
+     adev->hw_device.common.tag = HARDWARE_DEVICE_TAG;
+-- 
+2.43.0
+

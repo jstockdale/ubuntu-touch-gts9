@@ -1,0 +1,6 @@
+# Boot-time default orientation for gts9u-tp-rotate.
+# 0 = pad native frame (portrait-correct on gts9uwifi, no transform).
+# After the validation pass, set this to whichever label (90 or 270) proved
+# landscape-correct so the folio posture works from boot.
+# Once the DTS bake makes the driver landscape-native, flip this back to 0.
+GTS9U_TP_DEFAULT=0

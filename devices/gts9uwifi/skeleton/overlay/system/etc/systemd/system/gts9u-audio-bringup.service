@@ -1,0 +1,12 @@
+[Unit]
+Description=gts9u hardware bring-up (modules + finit stage, audio card, latch, HAL restart, jack)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gts9u-audio-bringup
+RemainAfterExit=yes
+TimeoutStartSec=360
+
+[Install]
+WantedBy=multi-user.target

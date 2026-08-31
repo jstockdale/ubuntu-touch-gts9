@@ -1,0 +1,82 @@
+#!/bin/sh
+
+gst_src=/usr/lib/aarch64-linux-gnu/gstreamer-1.0
+gst_dst=/home/phablet/.local/lib/gstreamer-1.0
+rm -rf "$gst_dst" && mkdir -p "$gst_dst"
+for so in "$gst_src"/*.so; do
+	case "${so##*/}" in libgsthybris.so|libgsthybrissink.so) continue;; esac
+	ln -sf "$so" "$gst_dst/${so##*/}"
+done
+chown -R 32011:32011 /home/phablet/.local/lib
+
+for m in /sys/devices/platform/soc/*.ssusb/mode; do
+	[ -w "$m" ] && echo peripheral > "$m"
+done
+
+# double tap to wake; the tsp class registers later in boot, and the cmd
+# value holds a comma so it cannot go through repowerd's DoubleTapToWake
+# deviceinfo config. mir holds the touch device open across blanks so
+# fts_input_close never fires and the sponge lpm is never armed on its own;
+# mirror the repowerd display power state onto the enabled node instead.
+(
+	c=0
+	while [ ! -w /sys/class/sec/tsp/cmd ] && [ $c -lt 120 ]; do sleep 1; c=$((c+1)); done
+	echo aot_enable,1 > /sys/class/sec/tsp/cmd 2>/dev/null
+	en=/sys/class/sec/tsp/input/enabled
+	while true; do
+		gdbus monitor --system --dest com.canonical.Unity.Screen \
+			--object-path /com/canonical/Unity/Screen 2>/dev/null |
+		while read -r line; do
+			case "$line" in
+			*DisplayPowerStateChange*\(1,*) echo 1 > "$en" 2>/dev/null;;
+			*DisplayPowerStateChange*\(0,*) echo 0 > "$en" 2>/dev/null;;
+			esac
+		done
+		sleep 2
+	done
+) &
+
+while [ ! -e /dev/socket/property_service ]; do sleep 0.1; done
+
+mac_info=/mnt/vendor/efs/wifi/.mac.info
+c=0; while [ ! -r "$mac_info" ] && [ $c -lt 20 ]; do sleep 0.2; c=$((c+1)); done
+mac=$(tr -dc '0-9A-Fa-f:' < "$mac_info" 2>/dev/null | tr A-F a-f)
+case "$mac" in
+??:??:??:??:??:??)
+	mkdir -p /run/NetworkManager/conf.d
+	printf '[connection]\nwifi.cloned-mac-address=%s\n' "$mac" \
+		> /run/NetworkManager/conf.d/99-gts9-wifi-mac-addr.conf
+	# NM can activate wifi before efs is mounted and the conf written; a
+	# reload alone never reapplies the mac, so bounce the connection once
+	(
+		c=0
+		until nmcli general reload conf >/dev/null 2>&1; do
+			[ $c -ge 150 ] && exit; sleep 2; c=$((c+1))
+		done
+		c=0
+		while [ $c -lt 30 ]; do
+			[ "$(cat /sys/class/net/wlan0/address 2>/dev/null)" = "$mac" ] && exit
+			case "$(nmcli -g GENERAL.STATE device show wlan0 2>/dev/null)" in
+			100*)
+				nmcli device disconnect wlan0 >/dev/null 2>&1
+				nmcli device connect wlan0 >/dev/null 2>&1
+				exit
+				;;
+			esac
+			sleep 2; c=$((c+1))
+		done
+	) &
+	;;
+esac
+
+# enables wireless display (aethercast) support
+setprop debug.stagefright.c2inputsurface 1
+setprop ubuntu.widi.supported 1
+
+# the 32-bit omx@1.0 service cannot exec on this 64-bit container, so its
+# IOmxStore never registers and stagefright's recorder blocks on it forever.
+# the manifest overlay drops the omx hal; force codec2 for the encoder too
+setprop debug.stagefright.ccodec 4
+
+# the HAL reports phone-style sensor orientations on a landscape-native panel
+for i in 0 1 2; do setprop aal.camera.orientations.$i 0; done

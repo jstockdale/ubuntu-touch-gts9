@@ -1,0 +1,41 @@
+image: ubuntu:24.04
+
+stages:
+  - build
+
+variables:
+  UT_RELEASE: "24.04-2.x"
+  USB_DR_MODE: "otg"
+
+build:
+  stage: build
+  resource_group: gts9-build
+  tags:
+    - arm64
+    - m4-fed
+  script:
+    - rm -rf workdir out partitions ota build
+    - apt update
+    - >-
+      apt install -y --no-install-recommends
+      bc bison build-essential ca-certificates cpio curl device-tree-compiler fakeroot flex
+      git kmod libelf-dev libssl-dev lz4 python3 rsync sudo unzip wget xxd xz-utils zstd zip
+      android-sdk-libsparse-utils e2fsprogs util-linux erofs-utils attr
+    - ./build.sh
+    - zstd -T0 -19 out/ubuntu.img -o out/ubuntu.img.zst
+    - ./scripts/super.sh
+    - ZIP="out/ubuntu-touch-gts9uwifi-${UT_RELEASE}.zip" ./scripts/make-flashable.sh
+    - sha256sum "out/ubuntu-touch-gts9uwifi-${UT_RELEASE}.zip" | tee out/SHA256SUMS
+    - >-
+      curl -fsS --http1.1 --retry 3 --retry-all-errors
+      --header "JOB-TOKEN: ${CI_JOB_TOKEN}"
+      --upload-file "out/ubuntu-touch-gts9uwifi-${UT_RELEASE}.zip"
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/ubuntu-touch-gts9uwifi/${UT_RELEASE}/ubuntu-touch-gts9uwifi-${UT_RELEASE}.zip"
+  artifacts:
+    paths:
+      - out/boot.img
+      - out/init_boot.img
+      - out/vendor_boot.img
+      - out/recovery.img
+      - out/ubuntu.img.zst
+      - out/SHA256SUMS

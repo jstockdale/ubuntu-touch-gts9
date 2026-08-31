@@ -1,0 +1,7 @@
+[Unit]
+Description=uMTP Responder
+
+[Service]
+Type=notify
+ExecStartPre=/bin/sh -c 'mountpoint -q /dev/usb-ffs/mtp || { mkdir -p /dev/usb-ffs/mtp; mount -t functionfs mtp /dev/usb-ffs/mtp; }'
+ExecStart=/usr/bin/umtprd

@@ -1,0 +1,4 @@
+# gts9uwifi: Goodix Berlin touch (module name goodix_ts_berlin, matches stock
+# vendor_dlkm module for the swap). CONFIG_EPEN_WACOM_WEZ01=m is ALREADY in
+# vendor/kalama-gki_defconfig on both boards - only the wiring lines gate it.
+CONFIG_TOUCHSCREEN_GOODIX_BRL=m

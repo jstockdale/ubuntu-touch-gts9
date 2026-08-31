@@ -1,0 +1,14 @@
+[Unit]
+Description=Ensure /efs mountpoint exists in the Android container rootfs (gts9uwifi)
+DefaultDependencies=no
+After=local-fs.target
+Before=mount-android-system.service
+ConditionPathExists=/var/lib/lxc/android/android-rootfs.img
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/gts9-ensure-efs-mountpoint
+
+[Install]
+WantedBy=mount-android-system.service

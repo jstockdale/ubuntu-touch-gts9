@@ -1,0 +1,54 @@
+#!/bin/sh -euf
+# gts9uwifi start-android-container - replaces the stock halium wrapper to fix
+# Samsung offline-charging mode: ABL stamps androidboot.mode="charger" into
+# bootconfig whenever the tablet powers on with USB attached, and Android init
+# then runs the minimal `on charger` path and exits (no UI stack). We cannot
+# stop ABL appending it, so we present the container a FILTERED copy of
+# /proc/bootconfig with mode forced to "normal", bind-mounted over
+# proc/bootconfig inside the container namespace.
+#
+# Also folds in the stale-state clean (property area + property sockets left
+# by a previous container generation poison the next init with an EEXIST-path
+# NULL-deref SEGV in AOSP property init).
+
+# --- stale-state clean (family-portable robustness fix) ---------------------
+rm -rf /dev/__properties__.old
+mv /dev/__properties__ /dev/__properties__.old 2>/dev/null || true
+mkdir -m 0711 -p /dev/__properties__
+rm -f /dev/socket/property_service /dev/socket/property_service_for_system
+
+# --- filtered bootconfig: force normal boot mode ----------------------------
+BC=/run/bootconfig-normal
+if [ -r /proc/bootconfig ]; then
+    sed 's/androidboot\.mode = "charger"/androidboot.mode = "normal"/' \
+        /proc/bootconfig > "$BC"
+else
+    : > "$BC"
+fi
+
+# --- stock halium second-stage selection (unchanged logic) ------------------
+api_level=$(sed -n 's/^ro.build.version.sdk=//p' /android/system/build.prop)
+
+if [ "$api_level" -le 22 ]; then
+    stage2_env=""
+    stage2_arg=""
+elif [ "$api_level" -le 25 ]; then
+    stage2_env=""
+    stage2_arg="--second-stage"
+elif [ "$api_level" -le 28 ]; then
+    stage2_env="INIT_SECOND_STAGE=true"
+    stage2_arg=""
+else
+    stage2_env=""
+    stage2_arg="second_stage"
+fi
+
+# shellcheck disable=SC2086
+exec /usr/bin/lxc-start -n android -F \
+    -s "lxc.mount.entry=$BC proc/bootconfig none bind,create=file 0 0" \
+    -- \
+    /system/bin/env -i \
+        PATH=/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/sbin:/system/sbin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin \
+        INIT_STARTED_AT=0 \
+        $stage2_env \
+        /init $stage2_arg

@@ -1,0 +1,50 @@
+# Copyright (C) 2020 - Dreemurrs Embedded Labs
+#
+# These services are disabled due to them being unnecessary critical process
+# and crash loop.
+
+service lmkd lmkd_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override
+
+service vendor.audio-hal-2-0 android.hardware.audio@2.0-service_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override
+
+# vendor.audio-hal stays enabled: pulse reaches the HAL through the
+# audio.hidl_compat shim, which needs the IDevicesFactory service running
+
+service vendor.usb-hal-1-1 android.hardware.usb@1.1-service_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override
+
+service vendor.usb-hal-1-2 android.hardware.usb@1.2-service_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override
+
+# Disable console as it conflicts with the rootfs console
+service console /system/bin/sh_HYBRIS_DISABLED
+    disabled
+    override
+
+# 32-bit leftovers on a 64-bit only container, execv fails and init
+# respawns them forever; codec2 replaces omx, drm and the external camera
+# provider have no consumer here
+service drm /system/bin/drmserver_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override
+
+service vendor.media.omx /vendor/bin/hw/android.hardware.media.omx@1.0-service_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override
+
+service vendor.camera-provider-2-7-ext /vendor/bin/hw/android.hardware.camera.provider@2.7-external-service_HYBRIS_DISABLED
+    disabled
+    oneshot
+    override

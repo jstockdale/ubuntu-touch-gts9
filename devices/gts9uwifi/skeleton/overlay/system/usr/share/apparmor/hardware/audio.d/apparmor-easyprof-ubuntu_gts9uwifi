@@ -1,0 +1,5 @@
+# libpulse globs client.conf.d (the autospawn toggle symlink lives there) and
+# treats EACCES as fatal; /etc/pulse/* in the audio group does not match the dir
+/etc/pulse/client.conf.d/ r,
+/etc/pulse/client.conf.d/** r,
+/run/pulseaudio-enable-autospawn r,

@@ -1,0 +1,4 @@
+[Samsung S-Pen gts9u]
+MatchName=sec_e-pen
+AttrInputProp=+INPUT_PROP_DIRECT
+AttrEventCode=-BTN_TOOL_PEN;-BTN_TOOL_RUBBER;-BTN_STYLUS;-BTN_STYLUS2

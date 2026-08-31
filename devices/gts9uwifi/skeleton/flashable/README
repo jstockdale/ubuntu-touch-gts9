@@ -1,0 +1,43 @@
+Ubuntu Touch for Samsung Tab S9 (gts9uwifi) - flashable update package
+
+This zip reflashes the boot images and writes a new rootfs onto the existing
+system dynamic partition. It carries NO Samsung firmware, so the device must
+already run a gts9uwifi Ubuntu Touch build.
+
+
+First install (once, builds super locally)
+
+The Samsung firmware partitions (vendor, odm, product, ...) are not
+redistributable, so super is assembled on your machine:
+
+  1. download the firmware bits:
+       https://download.azka.li/ubuntu-touch-kalama-firmware-v.tar.xz
+     (super minus system: vendor.img, odm.img, product.img, system_ext.img,
+      system_dlkm.img, vendor_dlkm.img)
+  2. ./build.sh
+  3. extract the tar next to out/, then:
+       PARTS=<extracted-dir> OUT=out/super.img scripts/super.sh
+  4. flash boot/init_boot/vendor_boot/vbmeta and super in TWRP (see below),
+     using out/*.img and out/super.img
+
+
+Updating (this zip)
+
+Prereq: the device already booted a gts9uwifi Ubuntu Touch build once.
+
+  1. boot TWRP (adb reboot recovery, or vol-up + power)
+  2. mount /data in TWRP (Mount -> Data); there is no free space elsewhere
+  3. adb push ubuntu-touch-gts9uwifi-update.zip /data/
+  4. Install -> /data -> ubuntu-touch-gts9uwifi-update.zip
+  5. adb shell twrp reboot system
+
+The updater flashes boot/init_boot/vendor_boot/vbmeta and dd's the rootfs
+onto /dev/block/mapper/system. It bundles a static zstd, so recovery needs
+nothing extra.
+
+
+Notes
+
+- Do not "reboot system" from the TWRP menu; it loops back to recovery. Use
+  adb shell twrp reboot system.
+- Build this zip from a finished ./build.sh with scripts/make-flashable.sh.

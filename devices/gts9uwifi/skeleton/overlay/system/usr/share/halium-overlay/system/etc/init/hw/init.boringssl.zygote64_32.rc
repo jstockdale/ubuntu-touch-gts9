@@ -1,0 +1,6 @@
+# 32-bit EL0 is unsupported on SM8550, so the *32 self tests can never exec and
+# their reboot_on_failure loops the container. Only run the 64-bit self tests.
+on init && property:ro.product.cpu.abilist64=*
+    exec_start boringssl_self_test64
+on property:apexd.status=ready && property:ro.product.cpu.abilist64=*
+    exec_start boringssl_self_test_apex64

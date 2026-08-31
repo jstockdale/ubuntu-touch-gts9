@@ -1,0 +1,21 @@
+# gts9uwifi: ensure the three LPASS codec macro DLKMs load at boot so the ASoC
+# machine probe completes and /sys/kernel/snd_card/card_state reads 1 (the gate
+# AGM inside pulseaudio polls). The script self-synchronizes with bounded waits,
+# so ordering here stays loose on purpose; no dependency on the android
+# container unit name.
+#
+# Install: /etc/systemd/system/gts9u-load-audio-macros.service
+# Enable:  systemctl daemon-reload && systemctl enable --now gts9u-load-audio-macros.service
+
+[Unit]
+Description=gts9u: load LPASS codec macros and bring sound card ONLINE
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=600
+ExecStart=/usr/libexec/gts9u-load-audio-macros
+
+[Install]
+WantedBy=multi-user.target

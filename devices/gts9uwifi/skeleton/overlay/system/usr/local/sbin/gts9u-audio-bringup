@@ -1,0 +1,103 @@
+#!/bin/sh
+# gts9u audio bring-up v3.
+# 1) The vendor modprobe storm drops modules nondeterministically - walk
+#    modules.load ourselves (dedup, blocklist-honored) and fill every hole.
+# 2) Wait for the sound card to come ONLINE.
+# 3) Nodes 0666: the container's AGM opens card_state O_RDWR from its own
+#    uid space; host-group 0660 locks it out (single-user device tradeoff).
+# 4) Clear Samsung's fallback latch property.
+# 5) Restart the container audio HAL: if it started before the card was up,
+#    its in-process AGM is permanently stale and every adev_open fails.
+# 6) Touch /run/gts9u-audio-ready - PulseAudio's gate waits on THIS, so PA
+#    can never start against a live card with a dead HAL behind it.
+LOGF=/var/log/gts9u-audio-bringup.log
+log(){ echo "gts9u-audio-bringup: $*" > /dev/kmsg 2>/dev/null
+       echo "$(date '+%F %T') $*" >> "$LOGF" 2>/dev/null; echo "$*"; }
+MDIR=/android/vendor_dlkm/lib/modules
+CS=/sys/kernel/snd_card/card_state
+rm -f /run/gts9u-audio-ready
+echo "---- boot $(date '+%F %T') ----" >> "$LOGF" 2>/dev/null
+
+c=0; while [ ! -f "$MDIR/modules.load" ] && [ $c -lt 120 ]; do sleep 1; c=$((c+1)); done
+[ -f "$MDIR/modules.load" ] || { log "FATAL: $MDIR/modules.load never appeared"; exit 1; }
+
+BL=$(sed -n 's/^blocklist[[:space:]]*//p' "$MDIR/modules.blocklist" 2>/dev/null | sed 's/\.ko$//' | tr - _)
+loaded=0; present=0; failed=""
+for m in $(awk '!seen[$0]++' "$MDIR/modules.load"); do
+    b=${m##*/}; n=${b%.ko}; p=$(echo "$n" | tr - _)
+    echo "$BL" | grep -qx "$p" && continue
+    grep -q "^$p " /proc/modules && { present=$((present+1)); continue; }
+    if insmod "$MDIR/$b" 2>/dev/null; then
+        loaded=$((loaded+1))
+    else
+        grep -q "^$p " /proc/modules && present=$((present+1)) || failed="$failed $n"
+    fi
+done
+log "modules: +$loaded inserted, $present already live, failed:${failed:- none}"
+
+# --- stage 2: curated finit loads --------------------------------------------
+# Some stock modules are modversion-locked against the halium kernel and fail
+# plain insmod with EINVAL. Observed: muic_sm5714 + pdic_sm5714 (no cable
+# detection -> no charging, degraded fuel gauge) and wez01 (no S-Pen). Load
+# them via finit_module with IGNORE_MODVERSIONS|IGNORE_VERMAGIC (flags=3,
+# __NR_finit_module=273 on arm64). CURATED ALLOWLIST ONLY - the general
+# failed list contains modules that must NOT be forced (other-variant codecs,
+# dataipa-dependent wlan, ipam/rmnet). Runs before the card wait so charging
+# never queues behind audio.
+FINIT_MODULES="muic_sm5714 pdic_sm5714 wez01"
+if command -v python3 >/dev/null 2>&1; then
+    finit_out=$(python3 - "$MDIR" $FINIT_MODULES <<'PYFIN'
+import ctypes, os, sys
+libc = ctypes.CDLL(None, use_errno=True)
+mdir = sys.argv[1]
+loaded = {l.split()[0] for l in open('/proc/modules')}
+out = []
+for m in sys.argv[2:]:
+    if m in loaded:
+        out.append(m + "=live"); continue
+    p = os.path.join(mdir, m + ".ko")
+    if not os.path.exists(p):
+        out.append(m + "=absent"); continue
+    fd = os.open(p, os.O_RDONLY)
+    r = libc.syscall(273, fd, b"", 3)
+    e = ctypes.get_errno(); os.close(fd)
+    out.append(m + "=ok" if r == 0 else m + "=err" + str(e))
+print(" ".join(out))
+PYFIN
+)
+    log "finit stage: $finit_out"
+else
+    log "WARN: python3 absent - finit stage skipped (charging/pen modules not loaded)"
+fi
+
+c=0; while [ "$(cat $CS 2>/dev/null)" != "1" ] && [ $c -lt 90 ]; do sleep 1; c=$((c+1)); done
+[ "$(cat $CS 2>/dev/null)" = "1" ] || { log "FATAL: card not ONLINE after 90s"; exit 1; }
+log "card ONLINE after ${c}s"
+
+chmod 0666 "$CS" /sys/kernel/aud_dev/state 2>/dev/null
+
+c=0; until setprop vendor.audio.use.primary.default false 2>/dev/null && \
+      [ "$(getprop vendor.audio.use.primary.default)" = "false" ]; do
+    [ $c -ge 60 ] && { log "FATAL: could not clear latch"; exit 1; }
+    sleep 1; c=$((c+1))
+done
+
+setprop ctl.restart vendor.audio-hal
+c=0; until [ "$(getprop init.svc.vendor.audio-hal)" = "running" ]; do
+    [ $c -ge 30 ] && { log "FATAL: audio-hal did not return"; exit 1; }
+    sleep 1; c=$((c+1))
+done
+sleep 2
+log "audio-hal restarted with card up + latch clear"
+
+# don't release PA until the virtual jack exists: droid-extevdev treats a
+# system with zero jack switch devices as fatal and aborts PA (upstream bug;
+# gts9u-virtual-h2w.service is the workaround). Warn-only: if uinput is ever
+# absent, audio should still get its chance.
+c=0; while ! grep -q gts9u-virtual-h2w /proc/bus/input/devices 2>/dev/null && [ $c -lt 15 ]; do
+    sleep 1; c=$((c+1))
+done
+grep -q gts9u-virtual-h2w /proc/bus/input/devices 2>/dev/null ||     log "WARN: virtual h2w device absent - droid-extevdev may abort PA"
+
+touch /run/gts9u-audio-ready
+log "bring-up complete - PA may start"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Virtual headset jack for gts9wifi (jackless; prevents PA droid-extevdev abort)
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/sbin/modprobe uinput
+ExecStart=/usr/bin/python3 /usr/local/bin/gts9-virtual-h2w.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

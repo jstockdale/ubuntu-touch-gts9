@@ -1,0 +1,23 @@
+gts9uwifi:
+  Vendor: Samsung
+  PrettyName: Tab S9 Ultra
+  DeviceType: tablet
+  SupportedOrientations:
+    - Portrait
+    - InvertedPortrait
+    - Landscape
+    - InvertedLandscape
+  PrimaryOrientation:
+    - Landscape
+  LomiriInteractiveBlur:
+    - true
+  MirAndroidPlatformServerBackpressure:
+    - false
+  MirAndroidPlatformServerPartialUpdates:
+    - true
+  MirAndroidPlatformServerEglSync:
+    - false
+  BacklightSysfsPath:
+    - /sys/class/backlight/panel0-backlight
+  FlashlightSysfsPath:
+    - /sys/class/leds/torch-sec1/brightness

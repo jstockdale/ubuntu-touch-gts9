@@ -1,0 +1,18 @@
+# gts9uwifi additions - append to arch/arm64/configs/halium.config
+# S-Pen (Wacom WEZ01) - drivers/input/wacom; requires Kconfig/Makefile wiring
+# (drivers/input/Kconfig sources neither wacom nor sec_input - mirror the
+#  mechanism that includes sec_input, or add:
+#    drivers/input/Kconfig:  source "drivers/input/wacom/Kconfig"
+#    drivers/input/Makefile: obj-$(CONFIG_EPEN_WACOM_WEZ01) += wacom/ )
+CONFIG_EPEN_WACOM_WEZ01=m
+# Ultra touch: goodix_ts_berlin (import source from SM-X910 OSRC drop;
+# ships as vendor_dlkm module goodix_ts_berlin.ko on stock - config symbol
+# per imported Kconfig, expected CONFIG_TOUCHSCREEN_GOODIX_BERLIN=m)
+# WLAN: Ultra is WCN785x "kiwi" (stock module qca_cld3_kiwi_v2.ko), not
+# qca6490 - deviceinfo_kernel_wlan_chip="kiwi_v2" set. Verify the imported
+# qcacld-3.0 tree carries the kiwi_v2 profile; if not, take it from the
+# X910 OSRC wlan tree. cnss2 platform driver supports both families.
+# PROJECT_NAME: audio-kernel and camera-kernel key per-board Samsung configs
+# on PROJECT_NAME=$deviceinfo_codename (=gts9uwifi) - import the gts9u*
+# config/sensor-set files from the X910 OSRC audio-kernel and camera-kernel
+# trees (this is where the Ultra's five camera sensors are wired kernel-side).

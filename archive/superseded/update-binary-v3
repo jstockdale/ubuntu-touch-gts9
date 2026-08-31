@@ -1,0 +1,76 @@
+#!/sbin/sh
+
+OUTFD=$2
+ZIPFILE="$3"
+
+ui_print() {
+    echo "ui_print $1" >> /proc/self/fd/$OUTFD
+    echo "ui_print" >> /proc/self/fd/$OUTFD
+}
+
+abort() {
+    ui_print "ERROR: $1"
+    exit 1
+}
+
+ui_print "---------------------------------------"
+ui_print " Ubuntu Touch for gts9uwifi"
+ui_print "---------------------------------------"
+
+# Device check v3. This TWRP (gts9u family, Fold5-kernel build) bakes its own
+# DTB into recovery, so /proc/device-tree and recovery props describe TWRP,
+# not the tablet. ABL-written cmdline/bootconfig is the only device-truth
+# visible here: hard-reject 5G (X916), verified-pass X910, else accept the
+# gts9u family with a warning.
+EXPECTED_CODENAME="gts9uwifi"
+DT_MODEL="$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+DEVICE_CODENAME="$(getprop ro.product.device)"
+BOOTINFO="$(cat /proc/cmdline /proc/bootconfig 2>/dev/null)"
+if echo "$BOOTINFO" | grep -q "X916"; then
+    abort "5G Ultra (SM-X916) detected - this package carries SM-X910 WiFi firmware"
+fi
+if echo "$BOOTINFO" | grep -q "X910"; then
+    ui_print "Device verified: SM-X910 (bootloader-reported)"
+else
+    case "$DT_MODEL$DEVICE_CODENAME" in
+        *GTS9UWIFI*|*gts9uwifi*)
+            ui_print "Device: gts9uwifi"
+            ;;
+        *GTS9U*|*gts9u*)
+            ui_print "WARNING: gts9u-family recovery cannot distinguish WiFi/5G here."
+            ui_print "WARNING: proceeding - ensure this tablet is an SM-X910 (WiFi)."
+            ;;
+        *)
+            abort "This package is for '$EXPECTED_CODENAME' (prop '$DEVICE_CODENAME', DT '$DT_MODEL')"
+            ;;
+    esac
+fi
+
+if ! command -v zstd >/dev/null 2>&1; then
+    unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null
+    chmod 755 /tmp/zstd 2>/dev/null
+fi
+ZSTD=$(command -v zstd || echo /tmp/zstd)
+[ -x "$ZSTD" ] || abort "no zstd available"
+
+SLOT="$(getprop ro.boot.slot_suffix)"
+
+ui_print "Flashing boot..."
+unzip -p "$ZIPFILE" boot.img | dd of="/dev/block/by-name/boot$SLOT" bs=4M || abort "failed to flash boot"
+ui_print "Flashing init_boot..."
+unzip -p "$ZIPFILE" init_boot.img | dd of="/dev/block/by-name/init_boot$SLOT" bs=4M || abort "failed to flash init_boot"
+ui_print "Flashing vendor_boot..."
+unzip -p "$ZIPFILE" vendor_boot.img | dd of="/dev/block/by-name/vendor_boot$SLOT" bs=4M || abort "failed to flash vendor_boot"
+ui_print "Flashing vbmeta..."
+unzip -p "$ZIPFILE" vbmeta.img | dd of="/dev/block/by-name/vbmeta$SLOT" bs=4M 2>/dev/null || ui_print "vbmeta flash skipped"
+
+ui_print "Writing super (several minutes)..."
+unzip -p "$ZIPFILE" super.img.zst | "$ZSTD" -d --long=27 -c | dd of="/dev/block/by-name/super" bs=16M || abort "failed to write super"
+
+sync
+
+ui_print "---------------------------------------"
+ui_print " Done. Reboot with: twrp reboot system"
+ui_print "---------------------------------------"
+
+exit 0

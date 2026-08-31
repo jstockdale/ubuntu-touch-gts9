@@ -1,0 +1,10 @@
+service sensors-hidl-2-1 /vendor/bin/hw/android.hardware.sensors@2.1-service.multihal
+    class hal
+    capabilities BLOCK_SUSPEND
+    rlimit rtprio 10 10
+    task_profiles ServiceCapacityLow
+
+service vendor.sensors-hal-multihal /vendor/bin/hw/android.hardware.sensors-service.multihal
+    class hal
+    disabled
+    override

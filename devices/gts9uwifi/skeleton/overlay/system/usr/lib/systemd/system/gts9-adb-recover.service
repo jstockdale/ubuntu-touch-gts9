@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart the static adb gadget after a failed bring-up
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl --no-block restart gts9-adb.service

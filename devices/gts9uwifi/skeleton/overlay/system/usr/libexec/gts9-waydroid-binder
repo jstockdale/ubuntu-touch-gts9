@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+import fcntl, struct, os
+
+BINDER_CTL_ADD = 0xC1086201
+ctl = os.open("/dev/binderfs/binder-control", os.O_RDONLY)
+for name in ("anbox-binder", "anbox-hwbinder", "anbox-vndbinder"):
+    node = "/dev/binderfs/" + name
+    if not os.path.exists(node):
+        buf = struct.pack("256sII", name.encode(), 0, 0)
+        fcntl.ioctl(ctl, BINDER_CTL_ADD, buf)
+    os.chmod(node, 0o666)
+    link = "/dev/" + name
+    if not os.path.islink(link):
+        os.symlink(node, link)
+
+cfg = "/var/lib/waydroid/lxc/waydroid/config"
+keep = "lxc.namespace.keep = ipc user time\n"
+if os.path.exists(cfg):
+    with open(cfg) as f:
+        lines = f.read()
+    if "lxc.namespace.keep" not in lines:
+        with open(cfg, "a") as f:
+            f.write(keep)

@@ -1,0 +1,149 @@
+#!/sbin/sh
+# TWRP flash script for Ubuntu Touch gts9uwifi.
+#
+# v4 changes (F1): every write path now detects upstream pipe failures.
+#   - Small images are staged to /tmp, size-verified, then dd'd.
+#   - super is integrity-tested (zstd -t, validates the frame xxhash64
+#     checksums end to end) BEFORE any byte touches the super partition,
+#     then written with per-stage failure markers so a mid-stream unzip or
+#     zstd error can no longer hide behind dd's exit 0.
+#   - vbmeta: "partition absent" (skip with notice) is now distinguished
+#     from "write failed" (abort - a failed vbmeta write leaves stock
+#     verity-enabled vbmeta in place, which will not boot this build).
+# Runs under TWRP busybox ash; POSIX sh only - no arrays, no [[, no
+# process substitution.
+
+OUTFD=$2
+ZIPFILE="$3"
+
+ui_print() {
+    echo "ui_print $1" >> /proc/self/fd/$OUTFD
+    echo "ui_print" >> /proc/self/fd/$OUTFD
+}
+
+abort() {
+    ui_print "ERROR: $1"
+    exit 1
+}
+
+# Belt: enable pipefail where the shell supports it (busybox ash does).
+# The marker-file scheme below does not depend on it.
+( set -o pipefail ) 2>/dev/null && set -o pipefail
+
+ui_print "---------------------------------------"
+ui_print " Ubuntu Touch for gts9uwifi"
+ui_print "---------------------------------------"
+
+# Device check v3. This TWRP (gts9u family, Fold5-kernel build) bakes its own
+# DTB into recovery, so /proc/device-tree and recovery props describe TWRP,
+# not the tablet. ABL-written cmdline/bootconfig is the only device-truth
+# visible here: hard-reject 5G (X916), verified-pass X910, else accept the
+# gts9u family with a warning.
+EXPECTED_CODENAME="gts9uwifi"
+DT_MODEL="$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+DEVICE_CODENAME="$(getprop ro.product.device)"
+BOOTINFO="$(cat /proc/cmdline /proc/bootconfig 2>/dev/null)"
+if echo "$BOOTINFO" | grep -q "X916"; then
+    abort "5G Ultra (SM-X916) detected - this package carries SM-X910 WiFi firmware"
+fi
+if echo "$BOOTINFO" | grep -q "X910"; then
+    ui_print "Device verified: SM-X910 (bootloader-reported)"
+else
+    case "$DT_MODEL$DEVICE_CODENAME" in
+        *GTS9UWIFI*|*gts9uwifi*)
+            ui_print "Device: gts9uwifi"
+            ;;
+        *GTS9U*|*gts9u*)
+            ui_print "WARNING: gts9u-family recovery cannot distinguish WiFi/5G here."
+            ui_print "WARNING: proceeding - ensure this tablet is an SM-X910 (WiFi)."
+            ;;
+        *)
+            abort "This package is for '$EXPECTED_CODENAME' (prop '$DEVICE_CODENAME', DT '$DT_MODEL')"
+            ;;
+    esac
+fi
+
+if ! command -v zstd >/dev/null 2>&1; then
+    unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null
+    chmod 755 /tmp/zstd 2>/dev/null
+fi
+ZSTD=$(command -v zstd || echo /tmp/zstd)
+[ -x "$ZSTD" ] || abort "no zstd available"
+
+SLOT="$(getprop ro.boot.slot_suffix)"
+
+# --- helpers -----------------------------------------------------------------
+
+# extract_verify <zip-member> <staging-path>
+# Streams a member out of the zip to /tmp and refuses empty/failed extraction.
+# unzip's exit status is checked directly - no pipe to mask it.
+extract_verify() {
+    rm -f "$2"
+    if ! unzip -p "$ZIPFILE" "$1" > "$2" 2>/dev/null; then
+        abort "cannot extract $1 from package (corrupt/incomplete zip?)"
+    fi
+    [ -s "$2" ] || abort "$1 extracted to zero bytes"
+}
+
+# flash_staged <staging-path> <partition-basename>
+# Requires the by-name node to exist, then writes and checks dd itself.
+flash_staged() {
+    tgt="/dev/block/by-name/$2"
+    [ -e "$tgt" ] || abort "partition node $tgt missing - wrong recovery/device?"
+    ui_print "Flashing $2 ($(wc -c < "$1") bytes)..."
+    if ! dd if="$1" of="$tgt" bs=4M 2>/dev/null; then
+        abort "failed writing $2"
+    fi
+    rm -f "$1"
+}
+
+# --- boot chain (staged: small enough for /tmp tmpfs) ------------------------
+
+extract_verify boot.img        /tmp/boot.img
+extract_verify init_boot.img   /tmp/init_boot.img
+extract_verify vendor_boot.img /tmp/vendor_boot.img
+
+flash_staged /tmp/boot.img        "boot$SLOT"
+flash_staged /tmp/init_boot.img   "init_boot$SLOT"
+flash_staged /tmp/vendor_boot.img "vendor_boot$SLOT"
+
+# --- vbmeta: absent partition is a skip, failed write is fatal ---------------
+
+if [ -e "/dev/block/by-name/vbmeta$SLOT" ]; then
+    extract_verify vbmeta.img /tmp/vbmeta.img
+    flash_staged /tmp/vbmeta.img "vbmeta$SLOT"
+else
+    ui_print "NOTE: vbmeta$SLOT partition not present on this device - skipping"
+fi
+
+# --- super: integrity-test the compressed stream BEFORE writing --------------
+# zstd frames carry xxhash64 content checksums (on by default at compression
+# time); -t decompresses and verifies them without writing. A truncated zip
+# member or corrupt frame fails here, before the super partition is touched.
+# zstd is the last element of the pipe, so its exit status is the pipeline's.
+
+[ -e /dev/block/by-name/super ] || abort "partition node super missing"
+
+ui_print "Verifying super image integrity (one decompress pass)..."
+if ! unzip -p "$ZIPFILE" super.img.zst | "$ZSTD" -t --long=27 2>/dev/null; then
+    abort "super.img.zst failed integrity test - refusing to touch super"
+fi
+
+# Write pass. dd's exit status only reflects dd; the subshell markers make
+# unzip/zstd failures (media error mid-read, checksum failure) fatal too.
+ui_print "Writing super (several minutes)..."
+rm -f /tmp/.uzfail /tmp/.zdfail
+( unzip -p "$ZIPFILE" super.img.zst || touch /tmp/.uzfail ) | \
+( "$ZSTD" -d --long=27 -c || touch /tmp/.zdfail ) | \
+dd of=/dev/block/by-name/super bs=16M 2>/dev/null || abort "failed writing super"
+sync
+[ ! -f /tmp/.uzfail ] || abort "zip read error during super write - super is now INCOMPLETE, reflash before booting"
+[ ! -f /tmp/.zdfail ] || abort "zstd error during super write - super is now INCOMPLETE, reflash before booting"
+
+sync
+
+ui_print "---------------------------------------"
+ui_print " Done. Reboot with: twrp reboot system"
+ui_print "---------------------------------------"
+
+exit 0

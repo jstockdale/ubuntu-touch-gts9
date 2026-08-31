@@ -1,0 +1,4 @@
+# Codec2 allocates decoder input blocks in the client process straight from
+# the dma heaps (see the mtk_mm grant in _mtk-common)
+/dev/dma_heap/qcom,system r,
+/dev/dma_heap/system r,

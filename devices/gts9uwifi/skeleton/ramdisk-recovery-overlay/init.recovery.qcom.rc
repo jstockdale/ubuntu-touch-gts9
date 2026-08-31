@@ -1,0 +1,11 @@
+on init
+    setprop sys.usb.controller a600000.dwc3
+    write /sys/class/backlight/panel0-backlight/brightness 200
+
+on fs
+    wait /sys/devices/platform/soc/a600000.ssusb/mode
+    write /sys/devices/platform/soc/a600000.ssusb/mode peripheral
+
+on boot
+    # panel0-backlight registers late, first write can hit ENOENT
+    write /sys/class/backlight/panel0-backlight/brightness 200

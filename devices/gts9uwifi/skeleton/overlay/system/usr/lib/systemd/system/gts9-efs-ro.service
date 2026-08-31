@@ -1,0 +1,14 @@
+[Unit]
+Description=Remount the Android /efs (sec_efs) read-only after it is mounted (gts9uwifi)
+DefaultDependencies=no
+After=mount-android-partitions.service
+Requires=mount-android-partitions.service
+ConditionPathIsMountPoint=/android/efs
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/mount -o remount,ro /android/efs
+
+[Install]
+WantedBy=mount-android-partitions.service

@@ -1,0 +1,2 @@
+SUBSYSTEM=="power_supply", KERNEL=="usb", ENV{POWER_SUPPLY_ONLINE}="1"
+SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_NAME}=="battery", RUN+="/bin/sh -c 'echo change > /sys/class/power_supply/usb/uevent'"

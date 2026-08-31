@@ -1,0 +1,46 @@
+#!/bin/sh
+# The Halium container rootfs ships without an /efs mountpoint, so the sec_efs
+# partition (Egis fingerprint sensor calibration lives under /efs/biometrics)
+# can never be mounted and enrollment fails. Add the mountpoint to the
+# container rootfs image once, growing it if it has no free space.
+set -e
+
+IMG=/var/lib/lxc/android/android-rootfs.img
+FLAG=/var/lib/lxc/android/.gts9-efs-mountpoint
+
+[ -e "$FLAG" ] && exit 0
+[ -e "$IMG" ] || exit 0
+
+# The image lives on the read-only system partition; make it writable while we
+# resize/edit it, and restore the read-only mount on the way out.
+remounted_rw=""
+if ! touch "$IMG" 2>/dev/null; then
+    mount -o remount,rw / && remounted_rw=1
+fi
+
+LP=$(losetup -f --show "$IMG")
+MP=$(mktemp -d)
+cleanup() {
+    umount "$MP" 2>/dev/null || true
+    losetup -d "$LP" 2>/dev/null || true
+    rmdir "$MP" 2>/dev/null || true
+    [ -n "$remounted_rw" ] && mount -o remount,ro / 2>/dev/null || true
+}
+trap cleanup EXIT
+
+mount "$LP" "$MP"
+if [ ! -d "$MP/efs" ]; then
+    if ! mkdir "$MP/efs" 2>/dev/null; then
+        umount "$MP"
+        losetup -d "$LP"
+        truncate -s +16M "$IMG"
+        LP=$(losetup -f --show "$IMG")
+        e2fsck -fy "$LP" >/dev/null 2>&1 || true
+        resize2fs "$LP" >/dev/null 2>&1
+        mount "$LP" "$MP"
+        mkdir "$MP/efs"
+    fi
+    chmod 0755 "$MP/efs"
+fi
+umount "$MP"
+touch "$FLAG"

@@ -1,0 +1,51 @@
+#!/sbin/sh
+
+OUTFD=$2
+ZIPFILE="$3"
+
+ui_print() {
+    echo "ui_print $1" >> /proc/self/fd/$OUTFD
+    echo "ui_print" >> /proc/self/fd/$OUTFD
+}
+
+abort() {
+    ui_print "ERROR: $1"
+    exit 1
+}
+
+ui_print "---------------------------------------"
+ui_print " Ubuntu Touch for gts9wifi"
+ui_print "---------------------------------------"
+
+EXPECTED_CODENAME="gts9wifi"
+DEVICE_CODENAME="$(getprop ro.product.device)"
+[ "$DEVICE_CODENAME" = "$EXPECTED_CODENAME" ] || abort "This package is for '$EXPECTED_CODENAME' (detected '$DEVICE_CODENAME')"
+
+if ! command -v zstd >/dev/null 2>&1; then
+    unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null
+    chmod 755 /tmp/zstd 2>/dev/null
+fi
+ZSTD=$(command -v zstd || echo /tmp/zstd)
+[ -x "$ZSTD" ] || abort "no zstd available"
+
+SLOT="$(getprop ro.boot.slot_suffix)"
+
+ui_print "Flashing boot..."
+unzip -p "$ZIPFILE" boot.img | dd of="/dev/block/by-name/boot$SLOT" bs=4M || abort "failed to flash boot"
+ui_print "Flashing init_boot..."
+unzip -p "$ZIPFILE" init_boot.img | dd of="/dev/block/by-name/init_boot$SLOT" bs=4M || abort "failed to flash init_boot"
+ui_print "Flashing vendor_boot..."
+unzip -p "$ZIPFILE" vendor_boot.img | dd of="/dev/block/by-name/vendor_boot$SLOT" bs=4M || abort "failed to flash vendor_boot"
+ui_print "Flashing vbmeta..."
+unzip -p "$ZIPFILE" vbmeta.img | dd of="/dev/block/by-name/vbmeta$SLOT" bs=4M 2>/dev/null || ui_print "vbmeta flash skipped"
+
+ui_print "Writing super (several minutes)..."
+unzip -p "$ZIPFILE" super.img.zst | "$ZSTD" -d --long=27 -c | dd of="/dev/block/by-name/super" bs=16M || abort "failed to write super"
+
+sync
+
+ui_print "---------------------------------------"
+ui_print " Done. Reboot with: twrp reboot system"
+ui_print "---------------------------------------"
+
+exit 0

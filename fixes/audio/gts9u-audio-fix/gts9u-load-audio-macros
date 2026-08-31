@@ -1,0 +1,123 @@
+#!/bin/sh
+# gts9u-load-audio-macros
+#
+# gts9uwifi (Tab S9 Ultra) Ubuntu Touch: the in-container stock loader brings up
+# the audio stack minus lpass_cdc_{va,wsa,wsa2}_macro_dlkm, so the ASoC machine
+# probe defers forever and /sys/kernel/snd_card/card_state stays 0, which is the
+# exact gate AGM's wait_for_snd_card_to_online() polls (O_RDWR, 100 x 1 s).
+#
+# This script: waits (bounded) for the container's module dir and the base audio
+# stack, loads the three macros, waits for card_state == 1, then makes the two
+# AGM sysfs nodes rw for the audio group so pulseaudio-as-phablet can open them.
+#
+# Idempotent, safe to re-run. Every stage is a bounded wait that fails loudly
+# with a concrete hint. See gts9u-audio-online-mechanism.md for the model.
+
+set -u
+
+MODDIR=/android/vendor_dlkm/lib/modules
+MACROS="lpass_cdc_va_macro_dlkm lpass_cdc_wsa_macro_dlkm lpass_cdc_wsa2_macro_dlkm"
+BASE_MODS="lpass_cdc_dlkm machine_dlkm"
+CARD_STATE=/sys/kernel/snd_card/card_state
+AUD_DEV_STATE=/sys/kernel/aud_dev/state
+PA_GROUP=audio
+
+log()  { echo "gts9u-audio: $*"; }
+warn() { echo "gts9u-audio: WARNING: $*" >&2; }
+die()  { echo "gts9u-audio: FATAL: $*" >&2; exit 1; }
+
+# ---- dependency validation (fail fast, with hints) --------------------------
+command -v insmod >/dev/null 2>&1 || die "insmod not found; install kmod (apt install kmod)"
+command -v grep   >/dev/null 2>&1 || die "grep not found; base system broken"
+[ -r /proc/modules ] || die "/proc/modules unreadable; run as root"
+[ "$(id -u)" = "0" ] || die "must run as root (insmod, chgrp on sysfs)"
+
+mod_loaded() { grep -q "^$1 " /proc/modules; }
+
+# wait_for <seconds> <description> <condition-function>
+wait_for() {
+    wf_t=$1; wf_desc=$2; wf_fn=$3; wf_c=0
+    until "$wf_fn"; do
+        [ "$wf_c" -ge "$wf_t" ] && return 1
+        [ $((wf_c % 30)) -eq 0 ] && log "waiting for ${wf_desc} (${wf_c}/${wf_t}s)"
+        sleep 1
+        wf_c=$((wf_c + 1))
+    done
+    return 0
+}
+
+cond_moddir() { [ -d "$MODDIR" ]; }
+cond_base() {
+    for b in $BASE_MODS; do
+        mod_loaded "$b" || return 1
+    done
+    return 0
+}
+cond_online() { [ "$(cat "$CARD_STATE" 2>/dev/null)" = "1" ]; }
+
+fix_perms() {
+    for n in "$CARD_STATE" "$AUD_DEV_STATE"; do
+        if [ ! -e "$n" ]; then
+            warn "$n missing; skipping perms on it"
+            continue
+        fi
+        chgrp "$PA_GROUP" "$n" 2>/dev/null || warn "chgrp $PA_GROUP $n failed"
+        chmod 0660 "$n" 2>/dev/null || warn "chmod 0660 $n failed"
+    done
+    if id -nG phablet 2>/dev/null | grep -qw "$PA_GROUP"; then
+        log "phablet is in group '$PA_GROUP'; PA can open card_state O_RDWR"
+    else
+        warn "phablet is NOT in group '$PA_GROUP'; AGM inside pulseaudio cannot open card_state O_RDWR. Fix: adduser phablet $PA_GROUP && reboot session"
+    fi
+}
+
+# ---- fast path: card already online ----------------------------------------
+if cond_online; then
+    log "card_state already 1 (sound card ONLINE); ensuring perms only"
+    fix_perms
+    exit 0
+fi
+
+# ---- stage 1: container module dir -----------------------------------------
+wait_for 180 "android vendor_dlkm module dir ($MODDIR)" cond_moddir \
+    || die "$MODDIR never appeared; android container / vendor_dlkm mount not up. Check the lxc android container and how vendor_dlkm is mounted (Azkali loop-mounts /userdata/vendor_dlkm.img)."
+
+for m in $MACROS; do
+    [ -f "$MODDIR/$m.ko" ] \
+        || die "$MODDIR/$m.ko missing; the vendor_dlkm image on this device lacks it. Verify the image/partition contents before anything else."
+done
+
+# ---- stage 2: base audio stack (loaded by the container) -------------------
+wait_for 180 "base audio modules ($BASE_MODS)" cond_base \
+    || die "container never loaded the base audio stack ($BASE_MODS); the loader problem is wider than the three macros. Run the loader-identification greps in gts9u-audio-online-mechanism.md."
+
+# ---- stage 3: load the three macros (idempotent) ---------------------------
+for m in $MACROS; do
+    if mod_loaded "$m"; then
+        log "$m already loaded"
+        continue
+    fi
+    if insmod "$MODDIR/$m.ko" 2>/dev/null; then
+        log "loaded $m"
+    elif mod_loaded "$m"; then
+        log "$m loaded concurrently (race with container loader); fine"
+    else
+        die "insmod $m failed and module is not loaded. Check: dmesg | tail -20"
+    fi
+done
+
+# ---- stage 4: wait for the machine probe to complete -----------------------
+if ! wait_for 90 "card_state == 1 (machine probe completion)" cond_online; then
+    [ -e "$CARD_STATE" ] \
+        || die "card_state node missing although machine_dlkm is loaded; unexpected, check dmesg for machine_dlkm init errors."
+    die "card_state stuck at '$(cat "$CARD_STATE" 2>/dev/null)'; machine probe still deferred with all macros loaded. Diagnose: dmesg | grep -iE 'asoc|deferred|Sound card' and cat /proc/snd_debug_proc/sdp_boot_log"
+fi
+
+reg_line=$(dmesg 2>/dev/null | grep "Sound card" | tail -1)
+log "sound card ONLINE${reg_line:+ – ${reg_line}}"
+
+# ---- stage 5: perms for the PA (phablet) AGM O_RDWR open -------------------
+fix_perms
+
+log "done"
+exit 0

@@ -1,0 +1,14 @@
+[Unit]
+Description=gts9u folio touchpad rotation shim
+ConditionPathExists=/dev/uinput
+After=multi-user.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/gts9u-tp-rotate
+ExecStart=/usr/local/sbin/gts9u-tp-rotate --wait --default ${GTS9U_TP_DEFAULT}
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
