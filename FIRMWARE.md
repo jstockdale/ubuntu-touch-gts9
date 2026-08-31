@@ -32,10 +32,12 @@ that revision. A new-in-box unit ships at **rev 1** — if it ever takes a
 
 **Support policy:** we intend 1-series and 5-series units to both work
 without cross-series reflashing — those are the two bootloader
-generations we own test hardware for (a sealed rev-1 S9+ and rev-5
-Ultra/11"). Revisions 2–4 should follow the same match-your-series rule
-(last build of your own series); recommended builds for those may be
-added if test hardware appears.
+generations we own test hardware for. rev-5 is validated (Ultra) /
+daily-driven (11"); rev-1 test hardware is now on hand (new-in-box S9+,
+X710, and X910), so the 1-series path is moving from assembled to
+tested. Revisions 2–4 follow the same match-your-series rule (last build
+of your own series); recommended builds for those may be added if test
+hardware appears.
 
 ## Tested / assembled against (the exact packages we used)
 
@@ -47,18 +49,34 @@ added if test hardware appears.
 
 ## Recommended per bootloader series
 
-| Device | rev-1 unit (new in box) | rev-5 unit |
+| Device | rev-1 unit (Android-13 target) | rev-5 unit (Android-15 target) |
 |---|---|---|
-| SM-X910 (Ultra) | X910XXU1AWHA — believed the last 1-series build; **UNTESTED, verify it is your model's final 1-series before use** | **X910XXS5CYG1** (tested) |
-| SM-X810 (S9+) | **X810XXU1AWHA** (the assembled target; last 1-series — confirmed) | last 5-series X810 build — identity TBD, untested |
-| SM-X710 (11") | X710XXU1AWHA — believed the last 1-series build; **UNTESTED, verify before use** | **X710XXU5CYD9** (Azkali's pin, proven) |
+| SM-X910 (Ultra) | **X910XXU1AWHA** (last A13 build, 2023-08-20) | **X910XXS5CYG1** (A15, tested — the lead port) |
+| SM-X810 (S9+) | **X810XXU1AWHA** (last A13 build; the assembled kit target) | X810XXS5CYG1 (A15, family-analogous, untested) |
+| SM-X710 (11") | **X710XXU1AWHA** (last A13 build, 2023-08-20) | X710XXU5CYD9 (A15, Azkali's pin) |
 
-The AWHA generation is confirmed as the final 1-series for the X810; the
-X710/X910 1-series recommendations assume the family shared it (the S9+
-OSRC bundle spans AWHA builds across variants) — verify against the
-firmware listings for your exact model before committing a rev-1 unit,
-and treat any not-marked-tested cell as an untested port: extract, build,
-and walk the bring-up ladder rather than assuming parity.
+**Last Android-13 build = `XXU1AWHA` for all three** — verified against
+sammobile's US (XAR) firmware history for X710 and X910 (both show AWHA,
+2023-08-20, as the final Android-13 release before the Android-14 BWK6
+build); X810 matches per our own assembled-kit record. All three are
+bootloader binary 1.
+
+Why AWHA and not a later binary-1 build: these tablets kept bootloader
+binary **1 through Android 14** (e.g. `XXU1BWK6`, Nov 2023) and only
+fused to binary 5 at Android 15. So "last binary-1" (an A14 build) and
+"last Android-13" (AWHA) are different — and this port needs the
+**Android-13 vendor base** (halium-13 / 5.15.153 kernel generation), so
+**target AWHA**, not BWK6.
+
+New-in-box note: a unit manufactured later may ship pre-loaded with a
+newer **binary-1** build (even Android 14 BWK6). Flashing AWHA onto it is
+a lateral flash *within binary 1* — no fuse burn, allowed — because you
+are not going above the unit's current bootloader binary. (Anti-rollback
+is keyed to the bootloader binary, not the Android version.) Read the
+binary in Download Mode first to be sure it is still 1.
+
+Treat any not-tested cell as an untested port: extract, build, and walk
+the bring-up ladder rather than assuming parity.
 
 Verification the extractors enforce for you:
 
