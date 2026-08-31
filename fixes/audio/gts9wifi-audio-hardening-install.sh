@@ -23,6 +23,9 @@
 #     There is NO PulseAudio gate here; PA startup is untouched (Azkali's
 #     own 50-gts9wifi-wait-audiohal.conf remains in place, unmodified).
 #   - no finit stage: muic/pdic/wez01 load cleanly on this device's image.
+#   - latch clear retries only briefly (15s vs the Ultra's 60s FATAL loop):
+#     by this point up to 210s of waits have passed so the property service
+#     is up in practice, and a failed clear is a WARN, never a wedge.
 #
 # Idempotent. Rootfs pieces die on reflash - rerun after every OTA/reflash
 # (fixes/post-flash/gts9wifi-post-flash.sh does this for you).
@@ -114,10 +117,15 @@ chmod 0666 "$CS" /sys/kernel/aud_dev/state 2>/dev/null
 
 # 3) latch clear (bug #2) - unconditional; remember whether it was armed
 WAS="$(getprop vendor.audio.use.primary.default 2>/dev/null)"
-setprop vendor.audio.use.primary.default false 2>/dev/null
+c=0
+until setprop vendor.audio.use.primary.default false 2>/dev/null && \
+      [ "$(getprop vendor.audio.use.primary.default)" = "false" ]; do
+    [ $c -ge 15 ] && break
+    sleep 1; c=$((c+1))
+done
 [ "$(getprop vendor.audio.use.primary.default)" = "false" ] \
     && log "latch clear ok (was: '${WAS:-unset}')" \
-    || log "WARN: latch clear did not stick"
+    || log "WARN: latch clear did not stick after 15s"
 
 # 4) conditional HAL restart (bug #5a) - only when there is staleness evidence
 SVC="$(getprop init.svc.vendor.audio-hal 2>/dev/null)"

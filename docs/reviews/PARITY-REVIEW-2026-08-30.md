@@ -1,3 +1,12 @@
+> **HISTORICAL SNAPSHOT — pre-remediation audit.** This is the parity review
+> exactly as produced on 2026-08-30, BEFORE the same-day five-tier
+> remediation (commits ed6fd72, 0e9db09, 2b5b919, 7ef9ffc, 44a27dd + the
+> verification-fix commit). Present-tense findings below (4500M deviceinfo,
+> missing post-flash script, absent apt pin, tp default 0, divergent swap
+> scripts, ...) were TRUE THEN and are FIXED NOW — current truth is
+> `docs/knowledge/PORT-STATE.md` §6–§7. The pristine capture copy lives at
+> `archive/notes/parity/PARITY-REVIEW.md`.
+
 # Three-device parity review — gts9wifi / gts9pwifi / gts9uwifi
 
 Synthesis of audit passes A–G (2026-08-30), files `A-` through `G-` in this directory.

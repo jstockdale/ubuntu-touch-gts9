@@ -12,7 +12,7 @@ inside the imports bundle (per-file provenance).
 
 | Item | Source | Verify |
 |---|---|---|
-| `gts9p-imports.tar.gz` | this session | sha256 `bce7f41222453588315f9f7dafe37cb0e2eb8701fdc5216be39dc2a208ff975c` |
+| gts9p imports: `devices/gts9pwifi/imports/` **from this repo, current HEAD** | ubuntu-touch-gts9.git | do NOT use any archived `gts9p-imports.tar.gz` (sha256 bce7f412... predates the 2026-08-30 wacom `drivers/input/{Kconfig,Makefile}` wiring addition — a tarball with that hash makes the build's wacom gates die FATAL) |
 | `build-gts9pwifi.sh`, `x810-extract.sh` | this session | `bash -n` passes; `chmod +x` both |
 | `SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip` | your s10.ooo link | exactly 9,225,074,787 bytes; `unzip -T` OK. Token links expire – if it 403s, regenerate from the samfw SM-X810 / XAR / AWHA page |
 | OSRC set: `SM-X818U_13_Opensource.zip` (base) + `SM-X810_13_Opensource_dts.zip` + AWHA-named delta zip | already downloaded | keep all three together |
@@ -69,21 +69,21 @@ sed -i 's/SM-X910/SM-X810/g' overlay/system/usr/libexec/gts9-adb-gadget \
 # super.sh manual-run default (the wrapper's export wins in the scripted
 # path, but a manual scripts/super.sh run must not get X910 geometry)
 sed -i 's/11744051200/11714691072/' scripts/super.sh
-# optional tidiness: the touchpad env-var names (pair renames consistently)
-sed -i 's/GTS9U_TP_/GTS9P_TP_/g' \
-    overlay/system/usr/local/bin/gts9p-tp-orient \
-    overlay/system/etc/default/gts9p-tp-rotate \
-    overlay/system/etc/systemd/system/gts9p-tp-rotate.service
 ```
+(The touchpad env-var rename moved to 1.2b — its target files only get their
+gts9p names in step 1.2.)
 
-Also fix identity by hand (no sed can guess these):
+Also fix identity by hand (no sed can guess these; note the deviceinfo yaml
+is still NAMED `gts9uwifi.yaml` until step 1.2 renames it):
 - `deviceinfo`: `deviceinfo_name="Tab S9+ 12.4'"`
-- `overlay/system/etc/deviceinfo/devices/gts9pwifi.yaml`: `PrettyName: Tab S9+`
+- `overlay/system/etc/deviceinfo/devices/gts9uwifi.yaml` (→ `gts9pwifi.yaml`
+  after 1.2): `PrettyName: Tab S9+`
 - Replace `GTS9UWIFI_EUR_OPEN.pit` with `GTS9PWIFI_EUR_OPEN.pit` (from
   `devices/gts9pwifi/reference/`); delete the X910 one.
 - `PORT-README.md` describes the X910 — rewrite or delete it.
 - `kernel-additions/halium.config.append` carries Ultra-only goodix notes;
-  harmless (the gts9p wrapper never appends it) but mark or delete.
+  the gts9p wrapper never appends it — DELETE it (keeping it means permanent
+  X910-comment noise in every 1.3 sweep).
 
 ### 1.2 File and symlink renames (sed does not rename files)
 
@@ -95,6 +95,18 @@ cd overlay/system/etc/systemd/system/multi-user.target.wants
 for l in *gts9u*; do t=$(readlink "$l"); rm "$l"; ln -s "${t//gts9u/gts9p}" "${l//gts9u/gts9p}"; done
 cd -
 ```
+
+### 1.2b Touchpad env-var tidiness (must run AFTER 1.2's renames)
+
+```
+sed -i 's/GTS9U_TP_/GTS9P_TP_/g' \
+    overlay/system/usr/local/bin/gts9p-tp-orient \
+    overlay/system/etc/default/gts9p-tp-rotate \
+    overlay/system/etc/systemd/system/gts9p-tp-rotate.service
+```
+
+Optional: skipping it leaves GTS9U_TP_FIFO/GTS9U_TP_DEFAULT names that stay
+internally consistent (the daemon still works) but show up in 1.3's sweep.
 
 ### 1.3 Verify the fork (case-insensitive — uppercase leftovers bite)
 
@@ -227,9 +239,8 @@ adb pull /sdcard/TWRP ./twrp-pristine-backup
 ## Phase 4 – build
 
 ```
-tar xzf gts9p-imports.tar.gz
-SKEL=~/samsung-gts9p IMPORTS=~/gts9p-imports SRC_PARTS=~/out-x810/parts \
-  ./build-gts9pwifi.sh
+SKEL=~/samsung-gts9p IMPORTS=/path/to/ubuntu-touch-gts9/devices/gts9pwifi/imports \
+  SRC_PARTS=~/out-x810/parts  ./build-gts9pwifi.sh
 ```
 
 What the script enforces on your behalf (all fail-fast, before the hours-long
@@ -242,8 +253,10 @@ kernel build where possible):
   in the cloned tree; `stm/fts1ba90a/` and `wacom/` dirs exist
 - GTS9P wired in the merged display Kbuild
 - every renamed audio/pen overlay file from Phase 1
-- post-build: **`stm_ts_fts1b90a.ko` in the module set is FATAL if missing**
-  (yes, Samsung spells it fts1b90a – do not "fix" it); `wez01.ko` warns only
+- post-build: **`stm_ts_fts1b90a.ko` AND `wez01.ko` in the module set are
+  both FATAL if missing** (yes, Samsung spells it fts1b90a – do not "fix"
+  it; wez01 became fatal 2026-08-30 once the wacom wiring shipped in the
+  imports)
 - `SUPER=11714691072` exported before super.sh
 
 Watchpoints: first techpack failure point is the msm_drm link with the GTS9P

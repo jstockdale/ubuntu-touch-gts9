@@ -9,3 +9,11 @@ display-drivers; goodix_ts_berlin driver import; gts9u DTS import (optional,
 stock dtbo path works for bring-up); wacom Kconfig wiring; regenerate pulse
 XMLs from X910 vendor audio configs; bench-verify wez01_gts9u.bin fw load,
 pen input name, calibration matrix, ro.boot slot handling in TWRP.
+
+---
+2026-08-30 note: the TODO list above is historical. The panel import, goodix
+berlin driver, gts9uwifi DTS, and wacom Kconfig wiring all exist in
+devices/gts9uwifi/imports/ (gts9u-imports bundle); only the pulse-XML
+regeneration from X910 vendor configs remains open (audio works with the
+family copies). The skeleton itself carries the 2026-08-30 parity fixes -
+see devices/gts9uwifi/README.md.

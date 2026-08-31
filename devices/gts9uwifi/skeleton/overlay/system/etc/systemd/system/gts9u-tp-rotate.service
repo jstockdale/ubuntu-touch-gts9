@@ -1,10 +1,13 @@
 [Unit]
 Description=gts9u folio touchpad rotation shim
-ConditionPathExists=/dev/uinput
 After=multi-user.target
 
 [Service]
 Type=simple
+# Belt (matches gts9u-virtual-h2w.service): uinput is built-in today; if it
+# ever ships modular, load it instead of silently no-starting on a failed
+# path condition. systemd's start-limit stops the retry loop if truly absent.
+ExecStartPre=-/sbin/modprobe uinput
 EnvironmentFile=-/etc/default/gts9u-tp-rotate
 ExecStart=/usr/local/sbin/gts9u-tp-rotate --wait --default ${GTS9U_TP_DEFAULT}
 Restart=on-failure

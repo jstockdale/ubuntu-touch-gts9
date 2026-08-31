@@ -15,7 +15,9 @@ set -euo pipefail
 
 LPMAKE=${LPMAKE:-lpmake}
 command -v "${LPMAKE}" >/dev/null || LPMAKE="$(dirname "$0")/prebuilt/lpmake"
-SUPER=${SUPER:-"11744051200"}    # X910 GTS9UWIFI_EUR_OPEN.pit; override per device
+SUPER=${SUPER:-"11744051200"}    # PIT-exact size for THIS device repo (fork
+                                 # seds the value, runbook 1.1b); the build
+                                 # wrapper exports the authoritative value
 GROUP=${GROUP:-"ubuntu"}
 PARTS=${PARTS:-"./partitions"}
 OUT=${OUT:-"./out/super.img"}

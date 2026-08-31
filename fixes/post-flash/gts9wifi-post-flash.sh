@@ -19,18 +19,21 @@ KIT=/home/phablet/gts9-postflash-kit
 
 log() { echo; echo "==== $*"; }
 [ "$(id -u)" = 0 ] || { echo "run as root (sudo)"; exit 1; }
+FAILED=""
 
 log "1/7 audio fix (extevdev/virtual-h2w, version-gated)"
-bash "$FIXES/audio/gts9-audio-fix-install.sh" || echo "  (see output above - gate refusing on >=14.2.110 is SUCCESS)"
+# NOTE: the version-gate refusal on >=14.2.110 exits 0 (it is a success);
+# a nonzero exit here is a REAL failure (preflight/apply error).
+bash "$FIXES/audio/gts9-audio-fix-install.sh" || { echo "  REAL FAILURE - see output above"; FAILED="$FAILED audio-fix"; }
 
 log "2/7 audio hardening (module walker + latch trap closure)"
-bash "$FIXES/audio/gts9wifi-audio-hardening-install.sh"
+bash "$FIXES/audio/gts9wifi-audio-hardening-install.sh" || { echo "  REAL FAILURE - see output above"; FAILED="$FAILED hardening"; }
 
 log "3/7 S-Pen pointer (touchscreen masquerade)"
-bash "$FIXES/input-pen/gts9wifi-pen-pointer-install.sh"
+bash "$FIXES/input-pen/gts9wifi-pen-pointer-install.sh" || { echo "  REAL FAILURE - see output above"; FAILED="$FAILED pen"; }
 
 log "4/7 apt pin (desktop-GL Qt guard) - rootfs"
-mount -o remount,rw / 2>/dev/null
+mount -o remount,rw / 2>/dev/null || echo "  WARN: remount rw failed - the rootfs installs below may fail"
 install -m 0644 "$FIXES/hygiene/no-desktop-qt5" /etc/apt/preferences.d/no-desktop-qt5
 echo "  installed /etc/apt/preferences.d/no-desktop-qt5"
 
@@ -69,9 +72,17 @@ cp -f "$0" "$KIT/post-flash/" 2>/dev/null || true
 chown -R phablet:phablet "$KIT" 2>/dev/null || true
 echo "  $KIT populated (keep an OFF-DEVICE copy too)"
 
+if [ -n "$FAILED" ]; then
+  log "FAILURES:$FAILED - fix these before trusting the device state"
+else
+  log "all steps succeeded"
+fi
+
 log "done - acceptance"
 echo "  reboot, then:"
 echo "    grep -c ONLINE /proc/snd_debug_proc/sdp_boot_log   # want 1"
 echo "    tail -5 /var/log/gts9-audio-hardening.log          # want '+0 inserted' + 'healthy boot'"
 echo "    paplay a tone; pen tracks as pointer after login"
 echo "    dpkg -l | grep -E 'libqt5(gui|quick)5' # only -gles rows"
+
+[ -z "$FAILED" ] || exit 1

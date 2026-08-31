@@ -34,9 +34,10 @@ open-issues ledger.
 
 - `devices/<codename>/` — per-device build script, skeleton (device repo
   overlay), OSRC import bundle, reference data (PIT, DTS), device docs.
-- `common/scripts/` — the v2 "F-series" build-stage scripts (audit/strict
-  variants). **Note:** these and the copies inside the gts9uwifi skeleton have
-  divergent improvements — see `common/scripts/README.md` before touching.
+- `common/scripts/` — the canonical v3 build-stage scripts (merged
+  dedupe+audit swap, LP-budget super.sh, strict make-flashable), kept
+  byte-identical with the gts9uwifi skeleton copies — edit here, re-install
+  there; see `common/scripts/README.md`.
 - `fixes/` — standalone installable fixes (audio bring-up, virtual headphone
   jack, touchpad rotation, S-Pen pointer).
 - `patches/upstream/` — patches destined for Halium / UBports. **Both are

@@ -42,8 +42,9 @@ X910 and even the X916C 5G. `[porting-first][tabS9plus][install-boot §7]`
 The **5G variants (X716/X816/X916)** are the room-for-future case. X916B (international 5G)
 is unlockable; US carrier variants (X916U etc.) are never unlockable. The port must
 **hard-reject X916 at flash time** because it shares the gts9u-family TWRP — the update-binary
-v3/v4 reads `/proc/cmdline`+`/proc/bootconfig` for X910 vs X916 (TWRP's baked Fold5 DTB makes
-prop/DT checks lie). `[porting-orig.p2][ultra-main.p2]`
+(v5 since 2026-08-30) reads `/proc/cmdline`+`/proc/bootconfig` and hard-rejects the 5G sibling
+AND every wrong-family model (TWRP's baked Fold5 DTB makes prop/DT checks lie).
+`[porting-orig.p2][ultra-main.p2]`
 
 ---
 
@@ -86,7 +87,7 @@ achieved 2026-08-04 `[porting-orig.p2]`; first fully working boot (charger-mode 
   but never flashed. Two-finger scroll works in terminal, **not in Morph** (suspected qtmir
   continuous-vs-discrete wheel bug); **pinch never works** (suspected Mir/qtmir gesture gap). `[peripherals §1]`
 - **Root filesystem size** — grown 4.5G→6.2G on-device via TWRP fastbootd + online resize2fs
-  (deleted One UI product/system_ext LPs). Build-pipeline lpmake fix NOT yet baked. `[infra §1]`
+  (deleted One UI product/system_ext LPs). Build-pipeline lpmake fix baked 2026-08-30 (see §6 #5). `[infra §1]`
 
 **BROKEN / UNTESTED:**
 - **Sensors HAL** — ISensors@2.1/2.0/1.0 not registering (multihal injection not landing); no
@@ -207,8 +208,9 @@ Signal path: PulseAudio 16.1 (phablet) → module-droid-card-30/droid-util →
 Each bug masked the next. In order:
 
 1. **Module load storm.** `/vendor/bin/vendor_modprobe.sh` backgrounds every modprobe in parallel
-   and discards exit codes; the Ultra's `modules.load` was **duplicated 4×** (build-pipeline
-   artifact) amplifying the storm. rx-macro and tx-macro `-EPROBE_DEFER` until **va-macro**
+   and discards exit codes; the Ultra's `modules.load` was **duplicated 4×** (present in the
+   stock/vendor list — measured on both X710 and X910; the own-pipeline
+   hypothesis was falsified by the parity audit) amplifying the storm. rx-macro and tx-macro `-EPROBE_DEFER` until **va-macro**
    registers (`lpass_cdc_is_va_macro_registered()`, lpass-cdc-rx-macro.c:4669/tx:2222). If
    `lpass_cdc_va_macro_dlkm` loses the race, the card never registers (`card_state` stays 0);
    some boots `machine_dlkm` itself drops. **va is the keystone** — one insmod cascades to ONLINE
@@ -332,7 +334,7 @@ decrements; any macro unbind is unrecoverable without reboot. `[audio-config.p1]
 ### Infra
 - **Root FS grow** — TWRP fastbootd (userspace) `delete-logical-partition product`+`system_ext`,
   bisect group ceiling to 6,210,715,648 B, online `resize2fs`. LP metadata restore MUST be first
-  1 MiB only. Pipeline lpmake fix (system→8e9, group→super capacity) still open. `[infra §1]`
+  1 MiB only. Pipeline lpmake fix (system→8e9, group→super capacity) still open. [DONE 2026-08-30 — §6 #5] `[infra §1]`
 - **Hotspot TTL** — `net.ipv4.ip_default_ttl=65` laptop-side (Halium kernel may lack xt_TTL). `[infra §5]`
 
 ### Build pipeline (findings F1–F9)
@@ -497,7 +499,7 @@ LimitNOFILE, apt pin, F5 prune, dedupe ramdisk lists, identity strings, h2w
 uinput belt, v4 header); Tier 2 build system (merged swap v3, super.sh v3
 LP budget + 7600M root, make-flashable v2, update-binary v5 sed-safe check,
 explicit SUPER export, true comments, wez01 FATAL both devices); Tier 3
-gts9p kit (runbook fork recipe incl. uppercase pass, wacom input wiring
-added to gts9p-imports, new build gates); Tier 4 gts9wifi hardening + pen
+gts9p kit docs (runbook fork recipe incl. uppercase pass, new build gates;
+the wacom input wiring files landed with Tier 2); Tier 4 gts9wifi hardening + pen
 installer + hygiene artifacts + post-flash kits + next-access checklist;
 Tier 5 these record corrections + upstream submission packs.

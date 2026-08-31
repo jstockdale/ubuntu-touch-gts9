@@ -80,6 +80,9 @@ full drop (Kernel.tar.gz 753 MB + Platform.tar.gz). Input set complete.
 - Touch module name: **`stm_ts_fts1b90a.ko`** (Samsung's own truncated TARGET
   spelling in the fts1ba90a Makefile – do not "correct" it). Fatal check in
   build-gts9pwifi.sh keys on this; `wez01.ko` stays warn-only.
+  [SUPERSEDED 2026-08-30: wez01.ko is now build-FATAL - the wacom
+  drivers/input wiring ships in gts9p-imports, so a missing pen module
+  means broken wiring, not an expected gap.]
 - Driver drift, azkali vs X818U base (documented, azkali's proven copies win;
   first suspects if gts9p touch/pen ever misbehaves): fts_ts.c 14 changed
   lines / 3297; wacom_i2c.c 148 / 3662; plus fts_ts.h, fts_sec.c, wacom_dev.h,

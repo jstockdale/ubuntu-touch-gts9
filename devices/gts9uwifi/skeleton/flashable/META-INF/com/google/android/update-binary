@@ -65,8 +65,15 @@ case "$BOOTINFO_LC" in
 esac
 # Wrong-family guard: any OTHER Tab S9 model reported by the bootloader is a
 # hard reject (a package must never write one sibling's firmware onto
-# another). Own wifi/5g tokens are skipped; 5G was already rejected above.
-for m in x710 x716 x810 x816 x910 x916; do
+# another). The sibling list is DERIVED at runtime from x71/x81/x91 prefixes
+# + 0/6 suffixes so that no full model token appears literally - a literal
+# list would be mangled by the fork's s/x910/x810/ sed (the own-model token
+# would collapse into a skipped duplicate and the Ultra reject would
+# silently vanish from the gts9p package). Own wifi/5g tokens are skipped;
+# 5G was already rejected above.
+for p in x71 x81 x91; do
+  for s in 0 6; do
+    m="$p$s"
     [ "$m" = "$MODEL_WIFI" ] && continue
     [ "$m" = "$MODEL_5G" ] && continue
     case "$BOOTINFO_LC" in
@@ -74,6 +81,7 @@ for m in x710 x716 x810 x816 x910 x916; do
             abort "wrong device: bootloader reports '$m' - this package is for $MODEL_WIFI ($EXPECTED_CODENAME)"
             ;;
     esac
+  done
 done
 
 case "$BOOTINFO_LC" in
@@ -95,6 +103,7 @@ case "$BOOTINFO_LC" in
         esac
         ;;
 esac
+# --- end device check (marker used by tools/dev/verify-flasher-fork.sh) ------
 
 if ! command -v zstd >/dev/null 2>&1; then
     unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null

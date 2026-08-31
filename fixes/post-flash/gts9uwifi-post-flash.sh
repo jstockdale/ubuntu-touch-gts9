@@ -19,6 +19,15 @@ MODE="${1:-check}"
 case "$MODE" in
 sweep)
   echo "==== one-time debris sweep (pre-skeleton on-device fixes, now baked)"
+  # Interlock: only sweep on an image that actually BAKES the replacements -
+  # on a pre-Tier-1 image this would delete WiFi persistence and the
+  # aud_pasthru group fix with nothing behind them.
+  grep -q cfg80211 /etc/modules-load.d/gts9uwifi.conf 2>/dev/null || {
+    echo "REFUSING: this image does not bake WiFi persistence (pre-Tier-1"
+    echo "build?). Flash a repo-built image first, then sweep."; exit 1; }
+  grep -q 'aud_pasthru_adsp.*GROUP="audio"' /usr/lib/udev/rules.d/70-gts9uwifi.rules 2>/dev/null || {
+    echo "REFUSING: 70-gts9uwifi.rules lacks the GROUP=audio fix (pre-Tier-1"
+    echo "build?). Flash a repo-built image first, then sweep."; exit 1; }
   mount -o remount,rw / 2>/dev/null
   for f in \
     /etc/systemd/logind.conf.d/90-gts9u.conf \

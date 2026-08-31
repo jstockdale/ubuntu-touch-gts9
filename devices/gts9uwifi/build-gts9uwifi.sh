@@ -5,7 +5,7 @@
 #   SRC_PARTS - path to out-x910/parts/      (x910-extract.sh output:
 #               vendor.img odm.img product.img system_ext.img
 #               system_dlkm.img vendor_dlkm.img)   [legacy name PARTS accepted]
-#   SKEL      - path to samsung-gts9u/       (gts9uwifi-skeleton.tar.gz)
+#   SKEL      - path to the device repo (devices/gts9uwifi/skeleton/ at HEAD)
 #   IMPORTS   - path to gts9u-imports/       (gts9u-imports.tar.gz)
 #
 # Host needs: git curl wget zstd lz4 xxd bc bison flex libssl-dev libelf-dev
@@ -160,6 +160,7 @@ grep -q "finit stage" "$AO/usr/local/sbin/gts9u-audio-bringup"
 grep -q 'qca_cld3_kiwi_v2' "$AO/etc/modules-load.d/gts9uwifi.conf"
 [ -L "$AO/etc/systemd/system/multi-user.target.wants/gts9u-tp-rotate.service" ]
 grep -q 'MODEL_WIFI="x910"' flashable/META-INF/com/google/android/update-binary
+grep -q 'for p in x71 x81 x91' flashable/META-INF/com/google/android/update-binary
 log "hardware overlay verified (audio + finit stage + pen reclass + dedupe + wifi + tp-rotate)"
 
 # 3. stage the X910 firmware bundle where build.sh expects it ----------------

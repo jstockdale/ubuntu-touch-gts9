@@ -20,7 +20,15 @@
 set -euo pipefail
 
 PARTS=${PARTS:-"./partitions"}
-BUILT=${BUILT:-$(ls -d ./workdir/tmp/system/{usr/,}lib/modules/* 2>/dev/null | head -1)}
+# BUILT default via loop, not brace-glob: under set -euo pipefail an ls over
+# a half-matching brace expansion exits 2 and killed the script with NO
+# message before the named-error checks below ever ran (verified live).
+if [ -z "${BUILT:-}" ]; then
+    for _d in ./workdir/tmp/system/usr/lib/modules/* ./workdir/tmp/system/lib/modules/*; do
+        [ -d "$_d" ] && { BUILT="$_d"; break; }
+    done
+fi
+BUILT=${BUILT:-}
 ALLOWLIST=${ALLOWLIST:-"$(dirname "$0")/swap-allowlist.txt"}
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

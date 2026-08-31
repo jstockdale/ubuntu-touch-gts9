@@ -3,7 +3,10 @@
 # Forked from build-gts9uwifi.sh; family split notes:
 #   touch  : STM FTS1BA90A (stm_ts_fts1b90a.ko) - in azkali tree already, NOT
 #            goodix berlin (that's Ultra-only). No touch driver import needed.
-#   pen    : wacom wez01 - in azkali tree already. No wacom import needed.
+#   pen    : wacom wez01 - driver SOURCE in azkali tree already, but the
+#            drivers/input/{Kconfig,Makefile} WIRING is not (Samsung's LEGO
+#            build injects it upstream); gts9p-imports carries the merged
+#            wacom-only pair (2026-08-30) and this script gates on it.
 #   panel  : GTS9P_ANA38407_AMSA24VU05 via gts9p-imports (dir + .dat + merged
 #            Kbuild whose .conf include exports the CONFIG_PANEL_* symbol).
 #   cmdline: bare panel string, lcd_id args dropped (GTS9P panel.c self-IDs
@@ -15,11 +18,11 @@
 #   SRC_PARTS - path to out-x810/parts/      (x810-extract.sh output:
 #               vendor.img odm.img product.img system_ext.img
 #               system_dlkm.img vendor_dlkm.img)   [legacy name PARTS accepted]
-#   SKEL      - path to samsung-gts9p/       (fork of gts9uwifi skeleton:
-#               grep -rl gts9u | xargs sed -i 's/gts9u/gts9p/g' plus file
-#               renames: gts9u-audio-bringup, gts9u-virtual-h2w.py, the two
-#               systemd units + wants symlinks, zz-gts9u-audio.conf,
-#               61-gts9u-pen.rules -> gts9p equivalents)
+#   SKEL      - path to samsung-gts9p/       (fork of gts9uwifi skeleton per
+#               the runbook Phase 1 recipe: content seds + uppercase/identity
+#               pass + file renames - audio bringup, virtual-h2w, tp-rotate,
+#               their three systemd units + wants symlinks, PA drop-in, pen
+#               rule -> gts9p equivalents)
 #   IMPORTS   - path to gts9p-imports/       (gts9p-imports.tar.gz)
 #
 # Host needs: git curl wget zstd lz4 xxd bc bison flex libssl-dev libelf-dev
@@ -85,8 +88,9 @@ cd samsung-gts9p
 #    build.sh / setup skip cloning when the target dir already exists, so we
 #    populate them first and overlay the bundle on top.
 #    Unlike the Ultra: NO goodix import (gts9p touch = stm fts1ba90a, already
-#    in-tree and proven on the base-S9 port) and NO wacom import (wez01
-#    already in-tree). Kernel-side import is the gts9pwifi dts dir only.
+#    in-tree and proven on the base-S9 port). Kernel-side imports are the
+#    gts9pwifi dts dir PLUS the merged drivers/input/{Kconfig,Makefile}
+#    (wacom wiring - the wez01 SOURCE is in-tree but its wiring is not).
 KDIR="workdir/downloads/kernel-samsung-gts9wifi"
 if [ ! -d "$KDIR" ]; then
     git clone --depth 1 -b android13-5.15-halium \
@@ -98,7 +102,7 @@ fi
     chmod -R u+w "$KDIR/arch/arm64/boot/dts/samsung/galaxytab/gts9pwifi"
 cp -rf "$IMPORTS/kernel-samsung-gts9wifi/." "$KDIR/"
 chmod -R u+w "$KDIR/arch/arm64/boot/dts/samsung/galaxytab/gts9pwifi"
-log "kernel imports applied (gts9pwifi dts r00/r02/r04)"
+log "kernel imports applied (gts9pwifi dts r00/r02/r04 + wacom input wiring)"
 # CONFIG_CMDLINE in halium.config hardcodes the 11" panel selection (and
 # CONFIG_CMDLINE_FORCE makes it authoritative) - retarget to the S9+ panel.
 # lcd_id args dropped: GTS9P panel.c reads the DDIC (manufacture_id, A1h) at
@@ -193,6 +197,9 @@ grep -q "finit stage" "$AO/usr/local/sbin/gts9p-audio-bringup"
 grep -q 'qca_cld3_kiwi_v2' "$AO/etc/modules-load.d/gts9pwifi.conf"
 [ -L "$AO/etc/systemd/system/multi-user.target.wants/gts9p-tp-rotate.service" ]
 grep -q 'MODEL_WIFI="x810"' flashable/META-INF/com/google/android/update-binary
+# sibling-reject generator must be intact (a literal model list would have
+# been mangled by the fork sed - the generator uses x71/x81/x91 prefixes)
+grep -q 'for p in x71 x81 x91' flashable/META-INF/com/google/android/update-binary
 if grep -riqE 'gts9u|x910' flashable/META-INF/com/google/android/update-binary; then
     echo "[gts9p-build] FATAL: Ultra tokens survive in flashable/update-binary -" >&2
     echo "  the fork rename was incomplete; a half-converted device check can" >&2

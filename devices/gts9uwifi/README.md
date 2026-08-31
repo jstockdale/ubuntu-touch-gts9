@@ -10,9 +10,10 @@ solved — see `docs/knowledge/gts9-audio-knowledge-transfer.md`), S-Pen
 digitizer (full pressure at evdev), Lomiri + Settings.
 
 **Partial:** S-Pen is pointer-only in apps (Mir 1.8 has no zwp_tablet_v2 —
-platform-gated); folio touchpad needs the rotation daemon
-(`fixes/input-touchpad/`), scroll broken in Morph, pinch dead; rootfs grown
-to 6.2 GB on-device but the lpmake budget is not yet baked into the build.
+platform-gated); folio touchpad rotation daemon is baked in the skeleton
+(default 270) but scroll is broken in Morph and pinch is dead (upstream
+Mir/qtmir); root ships at 7600M with the LP group at capacity since
+2026-08-30 (rebuilds no longer regress the on-device resize).
 
 **Open:** sensors HAL (no auto-rotate), cameras untested, USB-C host dead,
 UDFPS untested. Ledger: PORT-STATE.md §6.
@@ -24,11 +25,11 @@ UDFPS untested. Ledger: PORT-STATE.md §6.
   skeleton + imports + firmware parts, clones Azkali's kernel, builds
   kernel/techpacks, swaps vendor_dlkm modules, assembles super at the
   PIT-exact 11,744,051,200, packages the flashable zip.
-- `skeleton/` — the `samsung-gts9u` device repo (unpacked
-  `gts9uwifi-skeleton-audio.tar.gz`, the canonical audio-era superset), with
-  **one modification**: `flashable/META-INF/.../update-binary` upgraded to
-  the v4 flasher (zstd integrity pre-pass + pipeline-failure marker; the v3
-  it replaced is `archive/superseded/update-binary-v3`).
+- `skeleton/` — the `samsung-gts9u` device repo: the canonical audio-era
+  superset PLUS the 2026-08-30 parity fixes (WiFi persistence, tp-rotate
+  baked @270, apt pin, LimitNOFILE, GROUP=audio, F5 prune, 7600M root,
+  merged v3 scripts, v5 flasher — see "Build-system state" below; the
+  superseded v3 flasher is `archive/superseded/update-binary-v3`).
 - `imports/` — the SM-X910 OSRC import bundle (GTS9U panel driver, goodix
   berlin touch, gts9uwifi r00/r03 DTS, wacom wiring). See its
   `IMPORT-GUIDE.md`.

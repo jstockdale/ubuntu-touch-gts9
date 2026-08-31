@@ -54,7 +54,6 @@ rm -f /etc/udev/rules.d/.wtest
 # degrees) if the touchscreen node cannot be found.
 CAL=""
 for dev in /dev/input/event*; do
-  name=$(udevadm info --query=all --name="$dev" 2>/dev/null | sed -n 's/^E: NAME=//p')
   props=$(udevadm info --query=all --name="$dev" 2>/dev/null)
   case "$props" in
     *ID_INPUT_TOUCHSCREEN=1*)

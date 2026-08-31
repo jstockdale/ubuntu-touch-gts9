@@ -1,7 +1,12 @@
 # S-Pen (Wacom WEZ01)
 
-There is no standalone installer here — the shipped S-Pen support lives in the
-gts9uwifi skeleton overlay:
+- **`gts9wifi-pen-pointer-install.sh`** (2026-08-30) — standalone installer
+  for the 11": the proven touchscreen-masquerade rule (pointer tracking, no
+  pressure — Mir 1.8 ceiling), promoted out of `archive/pen-investigation/`.
+  Rootfs rule; rerun after every reflash (the post-flash script does).
+
+On the **Ultra** the S-Pen support ships in the skeleton overlay (no
+installer needed):
 
 - `61-gts9u-pen.rules` udev rule + libinput quirk — presents the pen as a
   touchscreen (`ID_INPUT_TOUCHSCREEN=1`, `+INPUT_PROP_DIRECT`, tool buttons

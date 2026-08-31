@@ -92,9 +92,13 @@ healthy boots; a nonzero N is the cheapest storm-regression alarm we have.
 
 - Quadruplication origin (stock Samsung image vs x910-extract pipeline)
   unconfirmed – dedupe at repack covers both; check the extract output when
-  convenient.
+  convenient. [ANSWERED 2026-08-30: the 11" on Azkali's untouched image
+  measured the same 4x duplication (457/357) – the amplifier is in the
+  stock/vendor list, not our pipeline.]
 - This skeleton predates the swap-allowlist leftover audit referenced in
   build-gts9uwifi.sh comments – reconcile if a newer skeleton exists.
+  [RESOLVED 2026-08-30: the skeleton now stages the merged v3 swap script
+  (dedupe + audit); allowlist triage per swap-allowlist.txt.template.]
 - Upstream: extevdev no-jack + null-free fix (UBports), shim swallow-error
   (Halium – needs the 24KB .so for exact offset), lpass_cdc_unregister_macro
   num_dais accounting (Azkali/CLO kernel tree).
