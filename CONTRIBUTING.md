@@ -8,8 +8,11 @@ for with a debugging session; sources cited in `docs/knowledge/PORT-STATE.md`.
 1. **Every rootfs change dies on reflash; every /home change dies on a
    userdata wipe.** Durable fixes go in the skeleton overlay
    (`devices/*/skeleton/overlay/`) or on /data. After any reflash, run the
-   post-flash checklist: audio-fix installer, `LimitNOFILE` drop-in for
-   lomiri-full-greeter, the desktop-Qt5 apt pin.
+   consolidated post-flash script for the device
+   (`fixes/post-flash/gts9wifi-post-flash.sh` on the 11";
+   `fixes/post-flash/gts9uwifi-post-flash.sh sweep|check` on the Ultra) —
+   and keep a copy of the kit off-device: a userdata wipe has already
+   destroyed the on-device fix set once (2026-08-29).
 2. Test binary/overlay changes reversibly first (a reboot is the oracle);
    fold into the skeleton only when proven on-device.
 
