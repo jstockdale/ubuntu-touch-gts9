@@ -151,6 +151,12 @@ grep -q 'CONFIG_TOUCHSCREEN_STM_FTS1BA90A=m' "$KDIR/arch/arm64/configs/vendor/ka
 grep -q 'CONFIG_EPEN_WACOM_WEZ01=m' "$KDIR/arch/arm64/configs/vendor/kalama-gki_defconfig"
 [ -d "$KDIR/drivers/input/touchscreen/stm/fts1ba90a" ]
 [ -d "$KDIR/drivers/input/wacom" ]
+# sanity: wacom KERNEL WIRING landed (the armed defconfig symbol sat inert
+# without it - Samsung's LEGO build injects it at build time upstream; our
+# imports now carry the merged drivers/input/{Kconfig,Makefile}, wacom-only,
+# no goodix references). Without this, wez01.ko silently never builds.
+grep -q 'source "drivers/input/wacom/Kconfig"' "$KDIR/drivers/input/Kconfig"
+grep -q 'CONFIG_EPEN_WACOM_WEZ01.*wacom/' "$KDIR/drivers/input/Makefile"
 # sanity: panel wired through the merged Kbuild + dts present
 grep -q 'GTS9P_ANA38407_AMSA24VU05' "$DDIR/msm/Kbuild"
 [ -f "$KDIR/arch/arm64/boot/dts/samsung/galaxytab/gts9pwifi/gts9pwifi_eur_open_w00_r04.dts" ]
@@ -173,11 +179,28 @@ fi
 [ -L "$AO/etc/systemd/system/multi-user.target.wants/gts9p-audio-bringup.service" ]
 [ -L "$AO/etc/systemd/system/multi-user.target.wants/gts9p-virtual-h2w.service" ]
 grep -q gts9p-audio-ready "$AO/etc/systemd/user/pulseaudio.service.d/zz-gts9p-audio.conf"
+# stale superseded PA drop-in must NOT exist (the fork sed would happily
+# rename an old 50-gts9uwifi-wait-audiohal.conf right past us - restored
+# negative gate, V3 parity)
+[ ! -e "$AO/etc/systemd/user/pulseaudio.service.d/50-gts9pwifi-wait-audiohal.conf" ]
 grep -q 'seen\[\$0\]' scripts/swap-vendor-modules.sh
+grep -q 'LEFTOVER' scripts/swap-vendor-modules.sh   # merged v3: dedupe AND audit
 [ -f "$AO/etc/libinput/local-overrides.quirks" ]
 [ -f "$AO/etc/udev/rules.d/61-gts9p-pen.rules" ]
 grep -q "finit stage" "$AO/usr/local/sbin/gts9p-audio-bringup"
-log "hardware overlay verified (audio + finit stage + pen reclass + dedupe)"
+# parity-remediation additions (2026-08-30): WiFi persistence, touchpad
+# rotation, and the sed-safe flasher device check must have survived the fork.
+grep -q 'qca_cld3_kiwi_v2' "$AO/etc/modules-load.d/gts9pwifi.conf"
+[ -L "$AO/etc/systemd/system/multi-user.target.wants/gts9p-tp-rotate.service" ]
+grep -q 'MODEL_WIFI="x810"' flashable/META-INF/com/google/android/update-binary
+if grep -riqE 'gts9u|x910' flashable/META-INF/com/google/android/update-binary; then
+    echo "[gts9p-build] FATAL: Ultra tokens survive in flashable/update-binary -" >&2
+    echo "  the fork rename was incomplete; a half-converted device check can" >&2
+    echo "  cross-flash. Redo the skeleton fork seds (case-insensitively" >&2
+    echo "  verify: grep -rni 'gts9u|x910')." >&2
+    exit 1
+fi
+log "hardware overlay verified (audio + finit stage + pen reclass + dedupe + wifi + tp-rotate + flasher)"
 
 # 3. stage the X810 firmware bundle where build.sh expects it ----------------
 #    skeleton build.sh does: [ -f $(basename $FIRMWARE) ] || wget $FIRMWARE
@@ -198,25 +221,27 @@ fi
 ./build.sh
 
 # 5. vendor module swap against the X810 vendor_dlkm -------------------------
-#    build.sh already extracted the firmware tar into partitions/ and ran
-#    swap-vendor-modules.sh (which audits leftovers - see its report and
-#    scripts/swap-allowlist.txt); verify the two hardware-critical modules.
-#    touch missing = unusable tablet = fatal; wez01 missing = no pen = warn.
-missing_touch=0
+#    build.sh already extracted the firmware tar into partitions/ and ran the
+#    merged swap-vendor-modules.sh v3: modules.load dedupe (audio bug #1) PLUS
+#    the LEFTOVER/UNLANDED audit. The X810 module set has NEVER been triaged -
+#    on the first build, read the LEFTOVER report in the build log carefully
+#    (this is exactly the va_macro-class check); then copy
+#    swap-allowlist.txt.template to swap-allowlist.txt and enforce.
+#    Verify the two hardware-critical modules: touch OR pen missing = FATAL
+#    (the wacom wiring now ships in gts9p-imports, so wez01 must build).
+missing_core=0
 for m in stm_ts_fts1b90a.ko wez01.ko; do
     found=$(find workdir/tmp/system -name "$m" 2>/dev/null | head -1)
     if [ -n "$found" ]; then
         log "built: $m -> $found"
-    elif [ "$m" = "stm_ts_fts1b90a.ko" ]; then
-        echo "[gts9p-build] FATAL: $m not in built module set - a build without touch" >&2
-        echo "  is unusable; check CONFIG_TOUCHSCREEN_STM_FTS1BA90A and the stm/" >&2
-        echo "  fts1ba90a tree before flashing anything." >&2
-        missing_touch=1
     else
-        log "WARNING: $m not in module set - pen will be absent; check wacom/wez01 config"
+        echo "[gts9p-build] FATAL: $m not in built module set" >&2
+        echo "  (stm_ts_fts1b90a = no touch - check CONFIG_TOUCHSCREEN_STM_FTS1BA90A;" >&2
+        echo "   wez01 = no pen - check the imported drivers/input wacom wiring)" >&2
+        missing_core=1
     fi
 done
-[ "$missing_touch" -eq 0 ] || exit 1
+[ "$missing_core" -eq 0 ] || exit 1
 
 # 6. super + flashable zip ---------------------------------------------------
 #    X810 SUPER from GTS9PWIFI_EUR_OPEN.pit: 2,860,032 blocks * 4096 B.

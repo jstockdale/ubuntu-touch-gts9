@@ -1,0 +1,20 @@
+# swap-vendor-modules strict-mode allowlist.
+#
+# PRESENCE OF THIS FILE ENABLES STRICT MODE: every stock vendor_dlkm module
+# that the halium build does not rebuild ("LEFTOVER") must be listed here,
+# or swap-vendor-modules.sh fails before repacking. Delete this file to run
+# in report-only mode.
+#
+# Workflow for the first strict run:
+#   1. Run the build (or scripts/swap-vendor-modules.sh directly). It will
+#      fail and print every leftover.
+#   2. Triage the list. For each name ask: does any subsystem we want need
+#      this module? Audio codec macros, sound, touch, sensors, haptics -
+#      if yes, the fix is enabling it in the halium techpack config, NOT
+#      allowlisting it. (va_macro would have been caught exactly here.)
+#   3. Genuinely unused Samsung-only modules go below, one name per line.
+#      '#' comments and blank lines are ignored.
+#
+# Keep entries commented with a reason - future you will ask why.
+
+# --- triaged leftovers go below this line ------------------------------------

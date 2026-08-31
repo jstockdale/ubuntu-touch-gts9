@@ -31,7 +31,13 @@ deviceinfo_bootimg_os_patch_level="2025-07"
 deviceinfo_bootimg_has_init_boot_partition="true"
 deviceinfo_rootfs_image_sector_size="4096"
 deviceinfo_halium_version="13"
-deviceinfo_system_partition_size="4500M"
+# 7600M (was 4500M): bakes the on-device root grow into the pipeline. The
+# 4.5G root ran 100% full; the device was manually resized to 6.2G via
+# fastbootd surgery (2026-08-14). With super.sh v3's group-at-capacity
+# ceiling, X910 totals: 7,969,177,600 (this) + 3,255,508,992 (stock LPs)
+# = 11.22e9 <= 11,744,051,200 super. Forks with a smaller super (gts9p:
+# 11,714,691,072) still fit; super.sh fails fast with a named error if not.
+deviceinfo_system_partition_size="7600M"
 deviceinfo_ubuntu_touch_release="24.04-2.x"
 deviceinfo_use_unified_recovery="true"
 deviceinfo_recovery_bootconfig_path="vendorboot/bootconfig.recovery"

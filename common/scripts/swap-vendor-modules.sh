@@ -1,19 +1,22 @@
 #!/bin/bash
 # Swap halium-built kernel modules into the stock vendor_dlkm image.
 #
-# v2 changes (F2): the swap is now audited. Any stock module NOT replaced by
-# a halium-built one keeps stock vermagic and cannot load against the halium
-# kernel - a silent dead module (this is exactly the class that cost us the
-# audio va_macro hunt). After swapping, this script reports:
+# v3 = the merge of the two v2-era forks (2026-08-30 parity remediation):
+#   - F2 audit branch: LEFTOVER/UNLANDED report + allowlist strict mode.
+#   - audio branch:    modules.load dedupe (audio bug #1) + xattr restore
+#                      on the rewritten lists.
 #
-#   1. LEFTOVER  - stock .ko with no same-named built module (suspect list)
-#   2. UNLANDED  - built .ko with no stock counterpart (rides another
-#                  vehicle - vendor ramdisk - or is silently dropped)
+# LEFTOVER  - stock .ko with no same-named built module. Keeps stock
+#             vermagic and cannot load against the halium kernel: a silent
+#             dead module (the class that cost the va_macro no-audio hunt).
+# UNLANDED  - built .ko with no stock counterpart (rides another vehicle -
+#             vendor ramdisk - or is silently dropped).
 #
 # Strict mode: if scripts/swap-allowlist.txt exists (override with
 # ALLOWLIST=...), every LEFTOVER must appear in it or the script fails
 # BEFORE repacking, leaving the previous vendor_dlkm.img untouched.
-# Delete the allowlist file to run report-only.
+# No allowlist file = report-only (the shipped default; each device needs
+# its own triage pass - see swap-allowlist.txt.template).
 set -euo pipefail
 
 PARTS=${PARTS:-"./partitions"}
@@ -32,6 +35,23 @@ MODS="$WORK/x/lib/modules"
 
 CTX=$(getfattr -n security.selinux --only-values "$MODS/smcinvoke_dlkm.ko" 2>/dev/null | tr -d '\0' || true)
 [ -n "$CTX" ] || CTX="u:object_r:vendor_file:s0"
+
+# --- dedupe modules.load -----------------------------------------------------
+# The stock list can ship duplicated 4x (measured on X710 AND our X910
+# repacks); vendor_modprobe.sh fires every line in parallel with exit codes
+# discarded, so a duplicated list multiplies the spawn storm and the odds of
+# any module silently losing the race (observed: lpass_cdc_va_macro,
+# machine_dlkm -> no sound card, no audio). Dedup at repack fixes every image
+# regardless of where the duplication began. The rewritten lists must get
+# their SELinux label back or they land labelless in the repacked erofs.
+for lst in "$MODS"/modules.load*; do
+    [ -f "$lst" ] || continue
+    before=$(wc -l < "$lst")
+    awk '!seen[$0]++' "$lst" > "$lst.dedup" && mv "$lst.dedup" "$lst"
+    chown 0:0 "$lst" 2>/dev/null || true; chmod 0644 "$lst"
+    setfattr -n security.selinux -v "$CTX" "$lst" 2>/dev/null || true
+    echo "dedup $(basename "$lst"): $before -> $(wc -l < "$lst") lines"
+done
 
 # --- inventories -------------------------------------------------------------
 find "$MODS"  -maxdepth 1 -name '*.ko' -printf '%f\n' | sort -u > "$WORK/stock.list"
@@ -103,7 +123,9 @@ if [ -f "$ALLOWLIST" ]; then
 else
     echo ""
     echo "note: no allowlist at $ALLOWLIST - report-only mode."
-    echo "Create the file (see swap-allowlist.txt template) to enforce."
+    echo "First build on a device/vintage: review the LEFTOVER report, then"
+    echo "copy swap-allowlist.txt.template to swap-allowlist.txt and fill it"
+    echo "with the triaged names to enforce on every later build."
 fi
 
 # --- repack ------------------------------------------------------------------

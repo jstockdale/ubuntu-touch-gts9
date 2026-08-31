@@ -10,6 +10,9 @@
 #   - vbmeta: "partition absent" (skip with notice) is now distinguished
 #     from "write failed" (abort - a failed vbmeta write leaves stock
 #     verity-enabled vbmeta in place, which will not boot this build).
+# v5 (2026-08-30): device check rewritten sed-safe (lowercase token
+#     variables + case-insensitive matching + wrong-family hard reject) so
+#     the gts9u->gts9p fork recipe converts it completely.
 # Runs under TWRP busybox ash; POSIX sh only - no arrays, no [[, no
 # process substitution.
 
@@ -34,34 +37,64 @@ ui_print "---------------------------------------"
 ui_print " Ubuntu Touch for gts9uwifi"
 ui_print "---------------------------------------"
 
-# Device check v3. This TWRP (gts9u family, Fold5-kernel build) bakes its own
-# DTB into recovery, so /proc/device-tree and recovery props describe TWRP,
-# not the tablet. ABL-written cmdline/bootconfig is the only device-truth
-# visible here: hard-reject 5G (X916), verified-pass X910, else accept the
-# gts9u family with a warning.
+# Device check v5 (sed-safe fork parametrization; semantics of v3 plus a
+# wrong-family hard reject). This TWRP (gts9u family, Fold5-kernel build)
+# bakes its own DTB into recovery, so /proc/device-tree and recovery props
+# describe TWRP, not the tablet. ABL-written cmdline/bootconfig is the only
+# device-truth visible here.
+# ALL model/codename tokens live in lowercase variables so the family fork
+# recipe (sed 's/gts9u/gts9p/g; s/x910/x810/g') retargets the ENTIRE check;
+# matching is case-insensitive (bootloader strings are uppercase). The 5G
+# sibling is derived (trailing 0 -> 6: x910->x916, x810->x816) so it
+# retargets automatically. v3's uppercase literals survived the lowercase
+# seds half-converted - the flaw this rewrite removes.
 EXPECTED_CODENAME="gts9uwifi"
+FAMILY_TOKEN="gts9u"
+MODEL_WIFI="x910"
+MODEL_5G="${MODEL_WIFI%0}6"
 DT_MODEL="$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
 DEVICE_CODENAME="$(getprop ro.product.device)"
 BOOTINFO="$(cat /proc/cmdline /proc/bootconfig 2>/dev/null)"
-if echo "$BOOTINFO" | grep -q "X916"; then
-    abort "5G Ultra (SM-X916) detected - this package carries SM-X910 WiFi firmware"
-fi
-if echo "$BOOTINFO" | grep -q "X910"; then
-    ui_print "Device verified: SM-X910 (bootloader-reported)"
-else
-    case "$DT_MODEL$DEVICE_CODENAME" in
-        *GTS9UWIFI*|*gts9uwifi*)
-            ui_print "Device: gts9uwifi"
-            ;;
-        *GTS9U*|*gts9u*)
-            ui_print "WARNING: gts9u-family recovery cannot distinguish WiFi/5G here."
-            ui_print "WARNING: proceeding - ensure this tablet is an SM-X910 (WiFi)."
-            ;;
-        *)
-            abort "This package is for '$EXPECTED_CODENAME' (prop '$DEVICE_CODENAME', DT '$DT_MODEL')"
+BOOTINFO_LC="$(printf %s "$BOOTINFO" | tr 'A-Z' 'a-z')"
+ID_LC="$(printf %s "$DT_MODEL$DEVICE_CODENAME" | tr 'A-Z' 'a-z')"
+
+case "$BOOTINFO_LC" in
+    *"$MODEL_5G"*)
+        abort "5G model ($MODEL_5G) detected - this package carries $MODEL_WIFI WiFi firmware"
+        ;;
+esac
+# Wrong-family guard: any OTHER Tab S9 model reported by the bootloader is a
+# hard reject (a package must never write one sibling's firmware onto
+# another). Own wifi/5g tokens are skipped; 5G was already rejected above.
+for m in x710 x716 x810 x816 x910 x916; do
+    [ "$m" = "$MODEL_WIFI" ] && continue
+    [ "$m" = "$MODEL_5G" ] && continue
+    case "$BOOTINFO_LC" in
+        *"$m"*)
+            abort "wrong device: bootloader reports '$m' - this package is for $MODEL_WIFI ($EXPECTED_CODENAME)"
             ;;
     esac
-fi
+done
+
+case "$BOOTINFO_LC" in
+    *"$MODEL_WIFI"*)
+        ui_print "Device verified: $MODEL_WIFI (bootloader-reported)"
+        ;;
+    *)
+        case "$ID_LC" in
+            *"$EXPECTED_CODENAME"*)
+                ui_print "Device: $EXPECTED_CODENAME"
+                ;;
+            *"$FAMILY_TOKEN"*)
+                ui_print "WARNING: $FAMILY_TOKEN-family recovery cannot distinguish WiFi/5G here."
+                ui_print "WARNING: proceeding - ensure this tablet is a $MODEL_WIFI (WiFi) unit."
+                ;;
+            *)
+                abort "This package is for '$EXPECTED_CODENAME' (prop '$DEVICE_CODENAME', DT '$DT_MODEL')"
+                ;;
+        esac
+        ;;
+esac
 
 if ! command -v zstd >/dev/null 2>&1; then
     unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null

@@ -151,10 +151,16 @@ fi
 grep -q gts9u-audio-ready "$AO/etc/systemd/user/pulseaudio.service.d/zz-gts9u-audio.conf"
 [ ! -e "$AO/etc/systemd/user/pulseaudio.service.d/50-gts9uwifi-wait-audiohal.conf" ]
 grep -q 'seen\[\$0\]' scripts/swap-vendor-modules.sh
+grep -q 'LEFTOVER' scripts/swap-vendor-modules.sh   # merged v3: dedupe AND audit
 [ -f "$AO/etc/libinput/local-overrides.quirks" ]
 [ -f "$AO/etc/udev/rules.d/61-gts9u-pen.rules" ]
 grep -q "finit stage" "$AO/usr/local/sbin/gts9u-audio-bringup"
-log "hardware overlay verified (audio + finit stage + pen reclass + dedupe)"
+# parity-remediation additions (2026-08-30): WiFi persistence, touchpad
+# rotation, and the sed-safe flasher device check must be in the staged tree.
+grep -q 'qca_cld3_kiwi_v2' "$AO/etc/modules-load.d/gts9uwifi.conf"
+[ -L "$AO/etc/systemd/system/multi-user.target.wants/gts9u-tp-rotate.service" ]
+grep -q 'MODEL_WIFI="x910"' flashable/META-INF/com/google/android/update-binary
+log "hardware overlay verified (audio + finit stage + pen reclass + dedupe + wifi + tp-rotate)"
 
 # 3. stage the X910 firmware bundle where build.sh expects it ----------------
 #    skeleton build.sh does: [ -f $(basename $FIRMWARE) ] || wget $FIRMWARE
@@ -175,29 +181,37 @@ fi
 ./build.sh
 
 # 5. vendor module swap against the X910 vendor_dlkm -------------------------
-#    build.sh already extracted the firmware tar into partitions/ and ran
-#    swap-vendor-modules.sh (which now audits leftovers - see its report and
-#    scripts/swap-allowlist.txt); verify the two new modules were built.
-#    goodix missing = unusable tablet = fatal; wez01 missing = no pen = warn.
-missing_goodix=0
+#    build.sh already extracted the firmware tar into partitions/ and ran the
+#    merged swap-vendor-modules.sh v3: modules.load dedupe (audio bug #1) PLUS
+#    the LEFTOVER/UNLANDED audit. With no scripts/swap-allowlist.txt the audit
+#    is REPORT-ONLY - read its LEFTOVER list in the build log; to enforce,
+#    copy swap-allowlist.txt.template to swap-allowlist.txt and triage.
+#    Verify the two imported modules were built: touch OR pen missing = FATAL
+#    (both are core hardware on this device and both are proven to compile).
+missing_core=0
 for m in wez01.ko goodix_ts_berlin.ko; do
     found=$(find workdir/tmp/system -name "$m" 2>/dev/null | head -1)
     if [ -n "$found" ]; then
         log "built: $m -> $found"
-    elif [ "$m" = "goodix_ts_berlin.ko" ]; then
-        echo "[gts9u-build] FATAL: $m not in built module set - a build without touch" >&2
-        echo "  is unusable; check goodix/berlin wiring before flashing anything." >&2
-        missing_goodix=1
     else
-        log "WARNING: $m not in module set - pen will be absent; check wacom wiring"
+        echo "[gts9u-build] FATAL: $m not in built module set" >&2
+        echo "  (goodix = no touch, wez01 = no pen; check the input wiring" >&2
+        echo "   imports before flashing anything)" >&2
+        missing_core=1
     fi
 done
-[ "$missing_goodix" -eq 0 ] || exit 1
+[ "$missing_core" -eq 0 ] || exit 1
 
 # 6. super + flashable zip ---------------------------------------------------
-#    skeleton super.sh defaults SUPER=11744051200 (X910 PIT-verified) and
-#    honors $LPMAKE. scripts/prebuilt/lpmake is aarch64 - locate a
-#    host-runnable lpmake first. A preset LPMAKE env is respected as-is.
+#    SUPER exported explicitly (X910 GTS9UWIFI_EUR_OPEN.pit) so super.sh can
+#    never fall back to a wrong geometry if the skeleton default is ever
+#    edited or the skeleton is forked (the V4/gts9p defense-in-depth pattern,
+#    backported). super.sh v3 sets the LP group ceiling to super capacity, so
+#    the on-device root-grow headroom survives rebuilds; the root size itself
+#    comes from deviceinfo_system_partition_size (7600M).
+#    scripts/prebuilt/lpmake is aarch64 - locate a host-runnable lpmake
+#    first. A preset LPMAKE env is respected as-is.
+export SUPER=11744051200
 if [ -n "${LPMAKE:-}" ]; then
     log "using preset LPMAKE: $LPMAKE"
 elif ! command -v lpmake >/dev/null 2>&1; then

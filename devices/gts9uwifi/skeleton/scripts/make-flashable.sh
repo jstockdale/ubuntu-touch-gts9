@@ -1,12 +1,17 @@
 #!/bin/bash
-set -xe
+# Package the flashable TWRP zip.
+# v2: -euo pipefail added alongside -x; boot-chain inputs are now checked
+# up front with named errors instead of relying on cp's failure message.
+set -xeuo pipefail
 HERE=$(dirname "$(realpath "$0")")/..
 OUT=${OUT:-"$HERE/out"}
 ZIP=$(realpath -m "${ZIP:-"$OUT/ubuntu-touch-gts9uwifi-super.zip"}")
 ZSTD_STATIC=${ZSTD_STATIC:-"$HERE/flashable/prebuilt/zstd"}
 ZSTD_LEVEL=${ZSTD_LEVEL:-19}
 
-[ -f "$OUT/super.img" ] || { echo "no $OUT/super.img; run scripts/super.sh first"; exit 1; }
+for f in "$OUT/super.img" "$OUT/boot.img" "$OUT/init_boot.img" "$OUT/vendor_boot.img"; do
+    [ -f "$f" ] || { echo "make-flashable: missing $f (run scripts/super.sh and the image build first)" >&2; exit 1; }
+done
 
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
@@ -17,7 +22,10 @@ cp "$OUT/boot.img" "$OUT/init_boot.img" "$OUT/vendor_boot.img" "$STAGE/"
 cp "$OUT/vbmeta.img" "$STAGE/" 2>/dev/null || cp "$HERE/vbmeta.img" "$STAGE/"
 # shipped for manual flashing, the updater does not touch the recovery partition
 cp "$OUT/recovery.img" "$STAGE/" 2>/dev/null || true
-[ -f "$ZSTD_STATIC" ] && cp "$ZSTD_STATIC" "$STAGE/zstd"
+# update-binary hard-requires zstd (recovery's own or this bundled static);
+# shipping without the bundle would make the zip depend on TWRP's toolset.
+[ -f "$ZSTD_STATIC" ] || { echo "make-flashable: missing static zstd at $ZSTD_STATIC" >&2; exit 1; }
+cp "$ZSTD_STATIC" "$STAGE/zstd"
 
 zstd -T0 "-$ZSTD_LEVEL" --long=27 -f "$OUT/super.img" -o "$STAGE/super.img.zst"
 
