@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # build-gts9pwifi.sh - end-to-end Ubuntu Touch build for Tab S9+ (SM-X810)
 # Forked from build-gts9uwifi.sh; family split notes:
 #   touch  : STM FTS1BA90A (stm_ts_fts1b90a.ko) - in azkali tree already, NOT

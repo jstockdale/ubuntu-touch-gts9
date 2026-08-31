@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # gts9wifi consolidated post-flash script
 # ---------------------------------------
 # Run as root after EVERY reflash/OTA of the 11" (Azkali image). Restores

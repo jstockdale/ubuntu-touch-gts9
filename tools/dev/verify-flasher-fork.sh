@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # verify-flasher-fork.sh - behavioral test of the update-binary device check,
 # for BOTH the Ultra original and the runbook-forked gts9p variant.
 #

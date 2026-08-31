@@ -1,4 +1,6 @@
 #!/bin/sh -e
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # Install gts9wifi virtual-jack workaround (rerun after any OTA).
 D="$(cd "$(dirname "$0")" && pwd)"
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }

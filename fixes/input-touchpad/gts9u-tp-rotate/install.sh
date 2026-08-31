@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # install.sh - install gts9u-tp-rotate on the tablet. Run as root from the
 # extracted directory:  sudo ./install.sh
 set -eu

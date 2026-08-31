@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # capture-boot.sh - race the short adb window on a crash-looping halium boot.
 # Run on the host, then (re)boot the tablet. Leave running across several
 # crash cycles; each cycle lands in captures/session-N/. Ctrl-C when done.

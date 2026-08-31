@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 """lp_inspect.py - read-only inspector for Android LP (super) partition metadata.
 
 Parses the liblp on-disk format directly: geometry block, metadata header,

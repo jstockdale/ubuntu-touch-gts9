@@ -64,6 +64,14 @@ SRC_PARTS=~/out-x910/parts  devices/gts9uwifi/build-gts9uwifi.sh
 **Port the S9+** (unexecuted; follow the runbook end to end):
 [`devices/gts9pwifi/docs/gts9pwifi-port-runbook.md`](devices/gts9pwifi/docs/gts9pwifi-port-runbook.md)
 
+## License & credits
+
+Original work © 2026 John Stockdale and Off by One, Inc., under the
+[BSD 3-Clause License](LICENSE). This repo contains and derives from
+third-party work (Samsung OSRC / Qualcomm GPL-2.0 kernel code, Azkali's
+`samsung-gts9` Halium device repo) under their own licenses — scope in
+[NOTICE](NOTICE). Not affiliated with Samsung, Qualcomm, UBports, or Halium.
+
 ## The rules (learned the hard way)
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before touching a device. The short

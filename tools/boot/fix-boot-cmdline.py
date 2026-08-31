@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 """fix-boot-cmdline.py - retarget the baked CONFIG_CMDLINE panel selection
 from the 11" Tab S9 panel to the Ultra's, by padded in-place replacement.
 

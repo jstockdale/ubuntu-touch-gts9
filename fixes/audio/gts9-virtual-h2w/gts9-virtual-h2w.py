@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # Virtual headset jack for jackless devices - stops droid-extevdev
 # (pulseaudio-modules-droid 14.2.107..14.2.109) from aborting PulseAudio.
 # Switch state stays 0 (unplugged) = speaker route.

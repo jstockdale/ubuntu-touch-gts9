@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # build-gts9uwifi.sh - end-to-end Ubuntu Touch build for Tab S9 Ultra (SM-X910)
 #
 # Inputs (all produced in prior sessions):

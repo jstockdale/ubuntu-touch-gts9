@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # gts9wifi audio hardening installer (bugs 1/2/5 prevention for the 11")
 # -----------------------------------------------------------------------
 # The 11" runs Azkali's image and has only ever HIT audio bug #4 (extevdev

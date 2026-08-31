@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 """fix-vendor-boot-mode.py - flip androidboot.mode=charger -> normal in a
 vendor_boot image's bootconfig section, by padded in-place byte replacement
 (size-preserving, no repack). Same method as fix-boot-cmdline.py.

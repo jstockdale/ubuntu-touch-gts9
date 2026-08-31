@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # x910-extract.sh - Extract Ubuntu Touch porting inputs from SM-X910 stock firmware
 #
 # Input:  a samfw/Frija-style firmware zip (AP_*, BL_*, CSC_* tar.md5 inside)

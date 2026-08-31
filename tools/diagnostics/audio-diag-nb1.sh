@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # audio-diag-nb1.sh -- Ubuntu Touch audio diagnostics, stage NB1
 # (first pass on Azkali's S-Pen build)
 #

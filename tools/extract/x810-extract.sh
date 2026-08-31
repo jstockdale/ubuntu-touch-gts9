@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # x810-extract.sh - produce out-x810/parts/ for build-gts9pwifi.sh from the
 # stock X810XXU1AWHA firmware (SAMFW.COM_SM-X810_XAR_X810XXU1AWHA_fac.zip).
 #

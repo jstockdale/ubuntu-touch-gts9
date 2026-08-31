@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # gts9-audio-fix installer
 # ------------------------
 # Workaround for the droid-extevdev "jackless abort" in

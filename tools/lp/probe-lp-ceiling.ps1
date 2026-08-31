@@ -1,3 +1,5 @@
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # probe-lp-ceiling.ps1 - bisect the largest size fastbootd will grant a logical partition.
 # NOT read-only: every successful probe commits that size to LP metadata (grow-only; fs data untouched).
 # Run from the platform-tools directory while the device sits in fastbootd (TWRP -> Reboot -> Fastboot).

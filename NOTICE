@@ -1,0 +1,27 @@
+# NOTICE — licensing scope
+
+Original work in this repository is
+Copyright (c) 2026, John Stockdale and Off by One, Inc.,
+released under the BSD 3-Clause License (see LICENSE): the build wrappers,
+the fixes/ installers and daemons, the tools/ utilities, the documentation,
+and the skeleton overlay additions authored for this port.
+
+This repository also CONTAINS and DERIVES FROM third-party work that the
+LICENSE does not cover; each remains under its own license:
+
+- `devices/*/imports/` — kernel source imported from Samsung Open Source
+  Release drops and Qualcomm/CodeLinaro trees (GPL-2.0, per the headers in
+  each file). The merged Kconfig/Makefile/Kbuild files are modifications of
+  those GPL-2.0 files and remain GPL-2.0.
+- `devices/gts9uwifi/skeleton/` — a fork of Azkali's `samsung-gts9` Halium
+  device repository (gitlab.com/azkali-samsung/gts9/ubports), carrying our
+  overlay additions on top. Upstream's licensing terms apply to upstream's
+  content.
+- `patches/upstream/` — patches intended for Halium and
+  pulseaudio-modules-droid; each is licensed under its target project's
+  license (Apache-2.0 / LGPL respectively) to keep them submittable.
+- `devices/*/reference/` — device trees (GPL-2.0, from Samsung OSRC) and PIT
+  partition tables (device metadata).
+- `archive/` — historical working material; `archive/binaries/` and
+  `archive/osrc/` (git-ignored, hashes in `archive/binaries/MANIFEST.md`)
+  are Samsung/Qualcomm proprietary artifacts that must not be redistributed.

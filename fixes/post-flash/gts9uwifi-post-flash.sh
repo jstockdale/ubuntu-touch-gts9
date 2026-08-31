@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # gts9uwifi post-flash script
 # ---------------------------
 # As of the 2026-08-30 parity remediation the Ultra skeleton bakes the whole

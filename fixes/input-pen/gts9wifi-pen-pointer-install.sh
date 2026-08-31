@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2026 John Stockdale and Off by One, Inc.
+# BSD 3-Clause License - see LICENSE at the repository root.
 # gts9wifi S-Pen pointer installer (touchscreen masquerade)
 # ---------------------------------------------------------
 # Puts the 11"'s S-Pen into the WORKING POINTER state on Mir 1.8: the
