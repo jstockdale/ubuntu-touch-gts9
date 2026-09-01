@@ -96,7 +96,9 @@ achieved 2026-08-04 `[porting-orig.p2]`; first fully working boot (charger-mode 
   aux/ultrawide lenses hidden by Samsung HAL (stretch). `[ultra-main.p1]`
 - **USB-C host mode** – external keyboard on Type-C dead (folio pogo works); dwc3 role-switch open. `[porting-orig.p4]`
 - **Fingerprint (UDFPS)** – EL721 driver alive but biometryd integration untested. `[porting-first]`
-- **GPS** – N/A (WiFi-only, no GNSS hardware).
+- **GPS** – untested on the Ultra. NOT "no hardware": the WiFi models DO carry GNSS (the
+  vendor image ships the AIDL IGnss service – §5). Expect the same structural HIDL/AIDL
+  mismatch diagnosed on the 11" (ledger #9); confirm the vendor service starts here too.
 - **Waydroid** – prime suspect for early container-kill theories; known broken on Azkali's builds.
 
 ### gts9wifi / SM-X710 (Tab S9 11") – Azkali's reference port, daily-driven
@@ -503,6 +505,27 @@ testable; hash-pin the AWHA packages in FIRMWARE.md when downloaded.
     `fixes/audio/gts9wifi-audio-hardening-install.sh`) – INSTALL on next
     device access via the post-flash script. `[D-audio-parity §3]`
 
+**New ledger items (2026-08-31 build/skeleton/subsystems review, deferred LOWs;
+the HIGH/MED findings were fixed same-day – see §8):**
+24. Build wrappers: bare `[ -f ]`/`grep -q` sanity gates die messageless under
+    `set -e` in scripts whose runs take hours – wrap in named-error gates or a
+    small `assert()` helper. `[H-build-logic L3]`
+25. update-binary: failure markers are `touch`ed inside the failing subshell; if
+    /tmp is full at that exact moment the marker itself fails and (without
+    pipefail) the failure passes silently. Pre-create markers and DELETE on
+    success instead. Pipefail-capable ash covers it today. `[H-build-logic L5]`
+26. update-binary: sibling reject matches 4-char model tokens (`x810` etc.) as
+    raw substrings of cmdline+bootconfig – a coincidental substring causes a
+    spurious hard reject (fails safe, never cross-flashes). Anchor on the known
+    bootloader keys if a false positive ever appears in the field. `[H-build-logic L6]`
+27. Ultra pen udev rules encode opposite intents: `61-gts9u-pen.rules` clears
+    `ID_INPUT_TABLET`, `74-gts9-wacom.rules` (lexically later) re-sets it to 1,
+    so 61's clear is dead code. Inert today (the libinput quirk strips the pen
+    buttons so the touchscreen path wins) – drop one side for coherence, then
+    re-verify pen pointer + eraser on-device. `[I-skeleton L1]`
+28. `fixes/input-touchpad/gts9u-tp-rotate/install.sh` has no `--uninstall`
+    (every other fix installer has one) – add for symmetry. `[I-skeleton L2]`
+
 ## 7. 2026-08-30 parity remediation (summary of what changed)
 
 Five-tier remediation executed against the parity-audit findings (full audit:
@@ -516,3 +539,43 @@ gts9p kit docs (runbook fork recipe incl. uppercase pass, new build gates;
 the wacom input wiring files landed with Tier 2); Tier 4 gts9wifi hardening + pen
 installer + hygiene artifacts + post-flash kits + next-access checklist;
 Tier 5 these record corrections + upstream submission packs.
+
+## 8. 2026-08-31 build/skeleton review + subsystems framework (what changed)
+
+Four adversarial reviews (build logic, skeleton integrity, subsystems checklist,
+subsystems script) over the build wrappers, common scripts, flasher, overlay
+units, and the new subsystems materials. All HIGH/MED findings fixed same day:
+
+- **Flasher** (`update-binary`): `conv=fsync` on both dd writes; bundled-zstd
+  fallback verifies unzip rc + non-empty + executable before trusting it.
+- **Bring-up** (`gts9u-audio-bringup`): HAL restart now verifies the pid
+  actually changed (old pid captured via `init.svc_debug_pid`/pgrep; warns and
+  re-sleeps if the restart was a no-op).
+- **Units**: `gts9u-tp-rotate.service` dropped `After=multi-user.target`
+  (ordering cycle with its own WantedBy could silently drop the start job) –
+  both the skeleton and fixes-kit copies.
+- **Installers**: `$`-escaping fixed in the 11" audio-fix PA gate heredoc and
+  the 55-conf (systemd unit `%`/`$` semantics ate `$n`; the gates never
+  actually waited); uninstall paths now remount rw first (three installers).
+- **mount-android-partitions**: the vendor_dlkm override hack is now guarded
+  (only fires for the vendor_dlkm mountpoint when the override image exists
+  and nothing is mounted yet) with all inner mounts failure-tolerant.
+- **Post-flash sweep**: also removes fixes-kit-named debris
+  (`gts9u-load-audio-macros.service`, `50-gts9u-audio-wait.conf`).
+- **Build wrappers**: FWTAR staleness guard (repack when any SRC_PARTS image
+  is newer; invalidates the preserved vendor_dlkm.img.stock); module-presence
+  gate scoped to the newest built modules dir; dead `J` knob removed.
+- **swap-vendor-modules**: BUILT auto-detect takes the NEWEST modules dir;
+  post-swap getfattr verification warns loudly when SELinux labels didn't
+  apply (unprivileged host).
+- **super.sh**: an explicitly-set-but-missing `LPMAKE` is now a hard error
+  (typo no longer silently masked by the prebuilt fallback).
+- **make-flashable**: names which vbmeta (built vs skeleton) was packaged.
+- **New**: `docs/checklists/SUBSYSTEMS.md` (UBports portStatus-aligned family
+  matrix + extras + port-diagnostics rows, evidence policy: `+`/`-` require
+  on-silicon record) and `tools/diagnostics/subsystems-check.sh` (read-only
+  on-device sweep emitting a paste block keyed to the matrix).
+- **Record corrections**: GPS is NOT "no hardware" on WiFi models (vendor
+  ships AIDL IGnss; the 11" diagnosis is a software mismatch, ledger #9) –
+  Ultra section + checklist fixed; SD card: family HAS a microSD slot.
+- Deferred LOWs recorded as ledger items 24–28.
