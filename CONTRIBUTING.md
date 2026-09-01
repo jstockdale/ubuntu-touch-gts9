@@ -13,8 +13,9 @@ Contributions are welcome – the most useful ones right now:
   rev 1 (AWHA) builds on any of the three devices, and the entire S9+ port
   (its runbook has never been executed) – are worth more than code. Open a
   GitHub issue with your device model, rev (from Download Mode), firmware
-  build, and a bring-up log (dmesg + the acceptance checks from the device
-  README).
+  build, the output of `tools/diagnostics/subsystems-check.sh`, and your
+  results against `docs/checklists/SUBSYSTEMS.md` (the family feature
+  matrix, UBports portStatus-aligned).
 - **The unsent upstream patches** in `patches/upstream/` – if you have
   standing in the Halium or UBports communities, carrying those forward
   helps every jackless Halium device, not just these tablets.

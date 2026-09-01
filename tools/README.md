@@ -29,6 +29,11 @@ Device-agnostic utilities from the porting campaign.
 
 ## diagnostics/
 
+- `subsystems-check.sh` – READ-ONLY on-device subsystem sweep for any
+  family device: auto-fills the machine-checkable rows of
+  `docs/checklists/SUBSYSTEMS.md` (WiFi, BT, sound chain, battery,
+  sensors, pen, folio, USB, ...) and prints the remaining manual list plus
+  a paste-ready results block. Run after every build/flash round.
 - `audio-diag-nb1.sh` – read-only audio triage ladder (H1/H2/H3 hypotheses:
   card state, PA state, extevdev presence) for the 11" no-sound cases.
 
