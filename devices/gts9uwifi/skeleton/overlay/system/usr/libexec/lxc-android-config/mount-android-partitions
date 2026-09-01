@@ -92,10 +92,19 @@ process_single_fstab_entry() {
     if [ ! -e "$path" ]; then return; fi
 
     echo "mounting $path as $android_mount_point"
-    mount -o remount,rw /
-    ln -sfn "/android/vendor_dlkm" /vendor_dlkm
-    mount -o remount,ro /
-    mount "/userdata/vendor_dlkm.img" "/android/vendor_dlkm" -o loop
+    # vendor_dlkm override: only when targeting vendor_dlkm, an override image
+    # exists, and it is not already mounted (previously ran unguarded for
+    # EVERY fstab entry: repeated / remounts + stackable loop mounts, and a
+    # failed mount could abort the whole script - 2026-08-31 review).
+    if [ "$android_mount_point" = "/android/vendor_dlkm" ] && \
+       [ -e /userdata/vendor_dlkm.img ] && \
+       ! mountpoint -q /android/vendor_dlkm 2>/dev/null; then
+        mount -o remount,rw / || true
+        ln -sfn "/android/vendor_dlkm" /vendor_dlkm || true
+        mount -o remount,ro / || true
+        mount "/userdata/vendor_dlkm.img" "/android/vendor_dlkm" -o loop \
+            || echo "WARN: vendor_dlkm override image failed to mount - using super LP copy"
+    fi
     mount "$path" "$android_mount_point" -o "$(parse_mount_flags "$4")" 
 }
 

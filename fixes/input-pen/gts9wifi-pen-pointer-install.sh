@@ -38,6 +38,8 @@ done
 [ "$(id -u)" = 0 ] || die "must run as root (sudo)"
 
 if [ "$UNINSTALL" = 1 ]; then
+  touch /etc/udev/rules.d/.wtest 2>/dev/null || mount -o remount,rw / || true
+  rm -f /etc/udev/rules.d/.wtest
   rm -f "$RULE"
   udevadm control --reload-rules 2>/dev/null || true
   udevadm trigger --subsystem-match=input 2>/dev/null || true

@@ -51,7 +51,6 @@ IMPORTS="${IMPORTS:?path to gts9u-imports bundle}"
 SRC_PARTS="${SRC_PARTS:-${PARTS:-}}"
 [ -n "$SRC_PARTS" ] || { echo "SRC_PARTS (or legacy PARTS) required: path to out-x910/parts" >&2; exit 1; }
 WORK="${WORK:-$PWD/gts9u-build}"
-J="${J:-$(nproc)}"
 
 log() { echo "[gts9u-build] $*" >&2; }
 
@@ -170,6 +169,19 @@ log "hardware overlay verified (audio + finit stage + pen reclass + dedupe + wif
 #    then: tar xf $(basename $FIRMWARE) -C partitions
 FWTAR="ubuntu-touch-kalama-firmware-x910.tar.xz"
 export FIRMWARE="https://localhost/$FWTAR"     # basename match skips the wget
+# Staleness guard (2026-08-31 review): a changed SRC_PARTS was previously
+# reused silently once the tar existed. Repack when any part is newer, and
+# drop the preserved vendor_dlkm.img.stock so the swap re-seeds from the
+# fresh stock image instead of a prior vintage.
+if [ -f "$FWTAR" ]; then
+    for f in vendor.img odm.img product.img system_ext.img system_dlkm.img vendor_dlkm.img; do
+        if [ "$SRC_PARTS/$f" -nt "$FWTAR" ]; then
+            log "SRC_PARTS newer than $FWTAR - repacking (and invalidating stale .stock)"
+            rm -f "$FWTAR" partitions/vendor_dlkm.img.stock
+            break
+        fi
+    done
+fi
 if [ ! -f "$FWTAR" ]; then
     log "packing $FWTAR from $SRC_PARTS (a few minutes)"
     rm -f "$FWTAR.tmp"
@@ -192,8 +204,11 @@ fi
 #    Verify the two imported modules were built: touch OR pen missing = FATAL
 #    (both are core hardware on this device and both are proven to compile).
 missing_core=0
+# scope to the newest built modules dir (a stale prior-build .ko elsewhere
+# under workdir must not satisfy the gate - 2026-08-31 review)
+MODDIR=$(ls -td workdir/tmp/system/usr/lib/modules/* workdir/tmp/system/lib/modules/* 2>/dev/null | head -1)
 for m in wez01.ko goodix_ts_berlin.ko; do
-    found=$(find workdir/tmp/system -name "$m" 2>/dev/null | head -1)
+    found=$(find "${MODDIR:-workdir/tmp/system}" -name "$m" 2>/dev/null | head -1)
     if [ -n "$found" ]; then
         log "built: $m -> $found"
     else

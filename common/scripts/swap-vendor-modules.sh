@@ -24,9 +24,9 @@ PARTS=${PARTS:-"./partitions"}
 # a half-matching brace expansion exits 2 and killed the script with NO
 # message before the named-error checks below ever ran (verified live).
 if [ -z "${BUILT:-}" ]; then
-    for _d in ./workdir/tmp/system/usr/lib/modules/* ./workdir/tmp/system/lib/modules/*; do
-        [ -d "$_d" ] && { BUILT="$_d"; break; }
-    done
+    # newest modules dir wins: a stale prior-kernel dir must not be swapped
+    # in wholesale (2026-08-31 review)
+    BUILT=$(ls -td ./workdir/tmp/system/usr/lib/modules/* ./workdir/tmp/system/lib/modules/* 2>/dev/null | head -1 || true)
 fi
 BUILT=${BUILT:-}
 ALLOWLIST=${ALLOWLIST:-"$(dirname "$0")/swap-allowlist.txt"}
@@ -134,6 +134,17 @@ else
     echo "First build on a device/vintage: review the LEFTOVER report, then"
     echo "copy swap-allowlist.txt.template to swap-allowlist.txt and fill it"
     echo "with the triaged names to enforce on every later build."
+fi
+
+# --- label verification ------------------------------------------------------
+# setfattr needs privileges; the || true guards above keep the swap running
+# on hosts where relabeling fails, but the labels are load-bearing in the
+# repacked erofs - verify one swapped module and WARN loudly if unlabeled.
+VCHK=$(getfattr -n security.selinux --only-values "$MODS/smcinvoke_dlkm.ko" 2>/dev/null | tr -d '\0' || true)
+if [ -z "$VCHK" ]; then
+    echo "WARNING: SELinux labels did NOT apply (unprivileged host?)." >&2
+    echo "         The repacked vendor_dlkm may carry unlabeled files - run" >&2
+    echo "         the build with privileges sufficient for setfattr." >&2
 fi
 
 # --- repack ------------------------------------------------------------------

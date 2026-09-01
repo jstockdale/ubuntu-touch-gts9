@@ -19,7 +19,11 @@ trap 'rm -rf "$STAGE"' EXIT
 cp -r "$HERE/flashable/META-INF" "$STAGE/"
 printf 'dummy\n' > "$STAGE/META-INF/com/google/android/updater-script"
 cp "$OUT/boot.img" "$OUT/init_boot.img" "$OUT/vendor_boot.img" "$STAGE/"
-cp "$OUT/vbmeta.img" "$STAGE/" 2>/dev/null || cp "$HERE/vbmeta.img" "$STAGE/"
+if [ -f "$OUT/vbmeta.img" ]; then
+    cp "$OUT/vbmeta.img" "$STAGE/"; echo "vbmeta: using built $OUT/vbmeta.img"
+else
+    cp "$HERE/vbmeta.img" "$STAGE/"; echo "vbmeta: using skeleton $HERE/vbmeta.img"
+fi
 # shipped for manual flashing, the updater does not touch the recovery partition
 cp "$OUT/recovery.img" "$STAGE/" 2>/dev/null || true
 # update-binary hard-requires zstd (recovery's own or this bundled static);

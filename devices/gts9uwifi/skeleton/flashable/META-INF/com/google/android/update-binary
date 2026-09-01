@@ -106,11 +106,14 @@ esac
 # --- end device check (marker used by tools/dev/verify-flasher-fork.sh) ------
 
 if ! command -v zstd >/dev/null 2>&1; then
-    unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null
+    if ! unzip -p "$ZIPFILE" zstd > /tmp/zstd 2>/dev/null; then
+        abort "no system zstd and the bundled one failed to extract"
+    fi
+    [ -s /tmp/zstd ] || abort "bundled zstd extracted empty - corrupt package?"
     chmod 755 /tmp/zstd 2>/dev/null
 fi
 ZSTD=$(command -v zstd || echo /tmp/zstd)
-[ -x "$ZSTD" ] || abort "no zstd available"
+[ -x "$ZSTD" ] && [ -s "$ZSTD" ] || abort "no usable zstd available"
 
 SLOT="$(getprop ro.boot.slot_suffix)"
 
@@ -133,7 +136,7 @@ flash_staged() {
     tgt="/dev/block/by-name/$2"
     [ -e "$tgt" ] || abort "partition node $tgt missing - wrong recovery/device?"
     ui_print "Flashing $2 ($(wc -c < "$1") bytes)..."
-    if ! dd if="$1" of="$tgt" bs=4M 2>/dev/null; then
+    if ! dd if="$1" of="$tgt" bs=4M conv=fsync 2>/dev/null; then
         abort "failed writing $2"
     fi
     rm -f "$1"
@@ -177,7 +180,7 @@ ui_print "Writing super (several minutes)..."
 rm -f /tmp/.uzfail /tmp/.zdfail
 ( unzip -p "$ZIPFILE" super.img.zst || touch /tmp/.uzfail ) | \
 ( "$ZSTD" -d --long=27 -c || touch /tmp/.zdfail ) | \
-dd of=/dev/block/by-name/super bs=16M 2>/dev/null || abort "failed writing super"
+dd of=/dev/block/by-name/super bs=16M conv=fsync 2>/dev/null || abort "failed writing super"
 sync
 [ ! -f /tmp/.uzfail ] || abort "zip read error during super write - super is now INCOMPLETE, reflash before booting"
 [ ! -f /tmp/.zdfail ] || abort "zstd error during super write - super is now INCOMPLETE, reflash before booting"

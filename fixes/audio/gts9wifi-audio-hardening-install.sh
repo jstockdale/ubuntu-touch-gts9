@@ -54,6 +54,8 @@ done
 [ "$(id -u)" = 0 ] || die "must run as root (sudo)"
 
 if [ "$UNINSTALL" = 1 ]; then
+  touch /usr/local/sbin/.wtest 2>/dev/null || mount -o remount,rw / || true
+  rm -f /usr/local/sbin/.wtest
   systemctl disable --now gts9-audio-hardening.service 2>/dev/null || true
   rm -f "$SCRIPT" "$UNIT"
   systemctl daemon-reload

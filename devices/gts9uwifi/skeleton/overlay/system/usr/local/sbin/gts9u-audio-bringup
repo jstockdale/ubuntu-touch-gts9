@@ -83,11 +83,23 @@ c=0; until setprop vendor.audio.use.primary.default false 2>/dev/null && \
     sleep 1; c=$((c+1))
 done
 
+# ctl.restart is async: the first poll can still see the OLD hal in state
+# "running" before init processes the restart. Capture the pid and require
+# it to change (warn-only if the pid file trick fails - the sleep 2 remains
+# the fallback settle).
+OLDPID=$(getprop init.svc_debug_pid.vendor.audio-hal 2>/dev/null)
+[ -n "$OLDPID" ] || OLDPID=$(pgrep -f audio.service_64 2>/dev/null | head -1)
 setprop ctl.restart vendor.audio-hal
 c=0; until [ "$(getprop init.svc.vendor.audio-hal)" = "running" ]; do
     [ $c -ge 30 ] && { log "FATAL: audio-hal did not return"; exit 1; }
     sleep 1; c=$((c+1))
 done
+NEWPID=$(getprop init.svc_debug_pid.vendor.audio-hal 2>/dev/null)
+[ -n "$NEWPID" ] || NEWPID=$(pgrep -f audio.service_64 2>/dev/null | head -1)
+if [ -n "$OLDPID" ] && [ "$OLDPID" = "$NEWPID" ]; then
+    log "WARN: audio-hal pid unchanged ($OLDPID) - restart may not have landed yet"
+    sleep 3
+fi
 sleep 2
 log "audio-hal restarted with card up + latch clear"
 

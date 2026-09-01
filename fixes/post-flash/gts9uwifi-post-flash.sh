@@ -39,6 +39,8 @@ sweep)
     /etc/udev/rules.d/71-gts9u-audiofix.rules \
     /etc/systemd/system/gts9u-audio-fix.service \
     /etc/systemd/system/gts9u-audio-macros.service \
+    /etc/systemd/system/gts9u-load-audio-macros.service \
+    /etc/systemd/user/pulseaudio.service.d/50-gts9u-audio-wait.conf \
     /etc/systemd/user/pulseaudio.service.d/50-gts9uwifi-wait-audiohal.conf ; do
     [ -e "$f" ] && { rm -f "$f"; echo "  removed $f"; }
   done

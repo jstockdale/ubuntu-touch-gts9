@@ -63,6 +63,9 @@ phablet_userctl() {
 # --- uninstall ---------------------------------------------------------------
 if [ "$UNINSTALL" -eq 1 ]; then
   log "uninstalling workaround (keeping $FIX_HOME)"
+  # rootfs is ro by default on UT - the rootfs removals below need rw
+  touch /usr/local/bin/.wtest 2>/dev/null || mount -o remount,rw / || true
+  rm -f /usr/local/bin/.wtest
   systemctl disable --now gts9-virtual-h2w.service 2>/dev/null || true
   rm -f "$UNIT" "$DAEMON"
   systemctl daemon-reload
@@ -217,7 +220,9 @@ cat > "$GATE" <<'GATEEOF'
 # the virtual h2w jack exists. Bounded at 30 s, fail-open ('-' prefix +
 # unconditional fallthrough) so a daemon failure can never wedge PA startup.
 [Service]
-ExecStartPre=-/bin/sh -c 'n=0; while [ $n -lt 30 ]; do cat /sys/class/input/input*/name 2>/dev/null | grep -qx gts9-virtual-h2w && exit 0; n=$((n+1)); sleep 1; done; echo "gts9-h2w gate: virtual jack absent after 30s - proceeding (extevdev may abort)" >&2'
+# NOTE: $$ everywhere - systemd expands bare $n to empty before the shell
+# runs (found 2026-08-31: the old gate never actually waited).
+ExecStartPre=-/bin/sh -c 'n=0; while [ $$n -lt 30 ]; do cat /sys/class/input/input*/name 2>/dev/null | grep -qx gts9-virtual-h2w && exit 0; n=$$((n+1)); sleep 1; done; echo "gts9-h2w gate: virtual jack absent after 30s - proceeding (extevdev may abort)" >&2'
 GATEEOF
 chown -R phablet:phablet /home/phablet/.config/systemd 2>/dev/null || true
 

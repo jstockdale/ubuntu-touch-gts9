@@ -13,8 +13,12 @@
 # image is built at that size; system partition = image size, single-extent).
 set -euo pipefail
 
-LPMAKE=${LPMAKE:-lpmake}
-command -v "${LPMAKE}" >/dev/null || LPMAKE="$(dirname "$0")/prebuilt/lpmake"
+if [ -n "${LPMAKE:-}" ]; then
+    command -v "${LPMAKE}" >/dev/null || { echo "super.sh: LPMAKE='$LPMAKE' not found (typo?)" >&2; exit 1; }
+else
+    LPMAKE=lpmake
+    command -v "${LPMAKE}" >/dev/null || LPMAKE="$(dirname "$0")/prebuilt/lpmake"
+fi
 SUPER=${SUPER:-"11744051200"}    # PIT-exact size for THIS device repo (fork
                                  # seds the value, runbook 1.1b); the build
                                  # wrapper exports the authoritative value

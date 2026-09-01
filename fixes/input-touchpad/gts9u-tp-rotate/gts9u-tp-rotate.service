@@ -1,6 +1,9 @@
 [Unit]
 Description=gts9u folio touchpad rotation shim
-After=multi-user.target
+# NOTE: no After=multi-user.target here - combined with WantedBy=multi-user
+# it formed an ordering cycle systemd resolves by dropping a job (the shim
+# could silently not start at boot; found in the 2026-08-31 review). The
+# daemon's own --wait handles late device appearance.
 
 [Service]
 Type=simple
